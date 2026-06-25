@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financials & YoY Growth Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f6f6f6;
+            --card-bg: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.08);
+            --text-primary: #000000;
+            --text-secondary: #555555;
+            --accent-orange: #FF7900;
+            --accent-green: #1AAB40;
+            --accent-purple: #6B007B;
+            --accent-coral: #D64550;
+            --glass-shine: rgba(0, 0, 0, 0.01);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(255, 121, 0, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 0, 0, 0.03) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-area h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FF7900, #F16E00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-area p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .filters-container {
+            display: flex;
+            gap: 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-group select {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+            background-size: 1em;
+            transition: all 0.2s ease;
+        }
+
+        .filter-group select:hover {
+            border-color: var(--accent-orange);
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, var(--glass-shine), transparent);
+            pointer-events: none;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .kpi-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .trend-up { color: var(--accent-green); }
+        .trend-down { color: var(--accent-coral); }
+        .trend-neutral { color: var(--text-secondary); }
+
+        /* Dashboard Main Layout */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 1.75rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card h2 span.subtitle {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+        }
+
+        /* Table Card styling */
+        .table-card {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 1024px) {
+            .table-card {
+                grid-column: span 1;
+            }
+        }
+
+        .data-table-container {
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(246, 246, 246, 0.8);
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+
+        tr {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            transition: background-color 0.2s ease;
+        }
+
+        tr:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-positive {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+
+        .badge-negative {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-coral);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <h1>YoY Sales Growth Dashboard</h1>
+            <p>Interactive Analysis of Power BI Financial Dataset</p>
+        </div>
+        <div class="filters-container">
+            <div class="filter-group">
+                <label for="countryFilter">Country</label>
+                <select id="countryFilter" onchange="updateDashboard()">
+                    <option value="All">All Countries</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="segmentFilter">Segment</label>
+                <select id="segmentFilter" onchange="updateDashboard()">
+                    <option value="All">All Segments</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Key Metrics Grid -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Total Sales (YTD 2014)
+            </div>
+            <div class="kpi-value" id="kpiSales">$0.00</div>
+            <div class="kpi-trend" id="salesTrend">
+                <span class="trend-up">▲ 2014 vs 2013</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                Average YoY Growth
+            </div>
+            <div class="kpi-value" id="kpiYoY">0.0%</div>
+            <div class="kpi-trend" id="yoyTrend">
+                <span class="trend-up">▲ Dynamic Rate</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                Total Profit (2014)
+            </div>
+            <div class="kpi-value" id="kpiProfit">$0.00</div>
+            <div class="kpi-trend" id="profitTrend">
+                <span class="trend-up">▲ Positive Margin</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                Units Sold (2014)
+            </div>
+            <div class="kpi-value" id="kpiUnits">0</div>
+            <div class="kpi-trend" id="unitsTrend">
+                <span class="trend-up">▲ Active Volume</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Visuals -->
+    <div class="dashboard-layout">
+        <!-- Sales comparison Chart -->
+        <div class="card">
+            <h2>Monthly Sales Trend <span class="subtitle">2013 vs 2014 Comparison</span></h2>
+            <div class="chart-container">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- YoY Growth Rate Chart -->
+        <div class="card">
+            <h2>Year-over-Year Growth Rate <span class="subtitle">Monthly YoY % (2014)</span></h2>
+            <div class="chart-container">
+                <canvas id="yoyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="card table-card">
+            <h2>Monthly Detailed Performance</h2>
+            <div class="data-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>2013 Sales</th>
+                            <th>2014 Sales</th>
+                            <th>YoY Growth (%)</th>
+                            <th>2014 Profit</th>
+                            <th>2014 Units Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inject parsed records from Node.js script
+        const rawData = [
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Canada",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 29156.16,
+    "yoy": null,
+    "profit": 20873.16,
+    "units": 2761
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Canada",
+    "segment": "ENTERPRISE",
+    "sales": 265760,
+    "yoy": null,
+    "profit": -24160,
+    "units": 2416
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Canada",
+    "segment": "GOVERNMENT",
+    "sales": 258308.05000000002,
+    "yoy": null,
+    "profit": 58123.049999999996,
+    "units": 5618
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Canada",
+    "segment": "MIDMARKET",
+    "sales": 31863,
+    "yoy": null,
+    "profit": 7163,
+    "units": 2470
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Canada",
+    "segment": "SMALL BUSINESS",
+    "sales": 354108,
+    "yoy": null,
+    "profit": 33358,
+    "units": 1283
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "France",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 24395.28,
+    "yoy": null,
+    "profit": 17693.28,
+    "units": 2234
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "France",
+    "segment": "ENTERPRISE",
+    "sales": 109972.5,
+    "yoy": null,
+    "profit": -12787.5,
+    "units": 1023
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "France",
+    "segment": "GOVERNMENT",
+    "sales": 591090.81,
+    "yoy": null,
+    "profit": 160865.81,
+    "units": 5363
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "France",
+    "segment": "MIDMARKET",
+    "sales": 8235,
+    "yoy": null,
+    "profit": 2745,
+    "units": 549
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "France",
+    "segment": "SMALL BUSINESS",
+    "sales": 87906,
+    "yoy": null,
+    "profit": 7406,
+    "units": 322
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Germany",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 24719.4,
+    "yoy": null,
+    "profit": 18074.4,
+    "units": 2215
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Germany",
+    "segment": "ENTERPRISE",
+    "sales": 115552.5,
+    "yoy": null,
+    "profit": -3727.5,
+    "units": 994
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Germany",
+    "segment": "GOVERNMENT",
+    "sales": 633286.26,
+    "yoy": null,
+    "profit": 149601.25999999998,
+    "units": 4648
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Germany",
+    "segment": "MIDMARKET",
+    "sales": 8613,
+    "yoy": null,
+    "profit": 2013,
+    "units": 660
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Germany",
+    "segment": "SMALL BUSINESS",
+    "sales": 313317,
+    "yoy": null,
+    "profit": 32567,
+    "units": 1123
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Mexico",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 10733.4,
+    "yoy": null,
+    "profit": 7718.4,
+    "units": 1005
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Mexico",
+    "segment": "ENTERPRISE",
+    "sales": 105353.75,
+    "yoy": null,
+    "profit": -8286.25,
+    "units": 947
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Mexico",
+    "segment": "GOVERNMENT",
+    "sales": 285462.80000000005,
+    "yoy": null,
+    "profit": 71122.79999999999,
+    "units": 4314
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Mexico",
+    "segment": "MIDMARKET",
+    "sales": 8744.25,
+    "yoy": null,
+    "profit": 2194.25,
+    "units": 655
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "Mexico",
+    "segment": "SMALL BUSINESS",
+    "sales": 236400,
+    "yoy": null,
+    "profit": 39400,
+    "units": 788
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "United States of America",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 23629.32,
+    "yoy": null,
+    "profit": 17662.32,
+    "units": 1989
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "United States of America",
+    "segment": "ENTERPRISE",
+    "sales": 40837.5,
+    "yoy": null,
+    "profit": 1237.5,
+    "units": 330
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "United States of America",
+    "segment": "GOVERNMENT",
+    "sales": 133762.6,
+    "yoy": null,
+    "profit": 33762.6,
+    "units": 1465
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "United States of America",
+    "segment": "MIDMARKET",
+    "sales": 40887.45,
+    "yoy": null,
+    "profit": 11577.449999999997,
+    "units": 2931
+  },
+  {
+    "year": 2013,
+    "monthNum": 9,
+    "monthName": "September",
+    "country": "United States of America",
+    "segment": "SMALL BUSINESS",
+    "sales": 741906,
+    "yoy": null,
+    "profit": 117406,
+    "units": 2498
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Canada",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 51865.44,
+    "yoy": null,
+    "profit": 38071.44,
+    "units": 4598
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Canada",
+    "segment": "ENTERPRISE",
+    "sales": 86250,
+    "yoy": null,
+    "profit": 3450,
+    "units": 690
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Canada",
+    "segment": "GOVERNMENT",
+    "sales": 907719.44,
+    "yoy": null,
+    "profit": 212869.44,
+    "units": 10936
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Canada",
+    "segment": "MIDMARKET",
+    "sales": 44969.4,
+    "yoy": null,
+    "profit": 10109.400000000001,
+    "units": 3486
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Canada",
+    "segment": "SMALL BUSINESS",
+    "sales": 138804,
+    "yoy": null,
+    "profit": 4304,
+    "units": 538
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "France",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 25589.28,
+    "yoy": null,
+    "profit": 18401.28,
+    "units": 2396
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "France",
+    "segment": "ENTERPRISE",
+    "sales": 167200,
+    "yoy": null,
+    "profit": -1760,
+    "units": 1408
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "France",
+    "segment": "GOVERNMENT",
+    "sales": 1450534.6800000002,
+    "yoy": null,
+    "profit": 321844.67999999993,
+    "units": 10472
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "France",
+    "segment": "MIDMARKET",
+    "sales": 58509,
+    "yoy": null,
+    "profit": 15169,
+    "units": 4334
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "France",
+    "segment": "SMALL BUSINESS",
+    "sales": 688644,
+    "yoy": null,
+    "profit": 78144,
+    "units": 2442
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Germany",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 18200.16,
+    "yoy": null,
+    "profit": 13604.16,
+    "units": 1532
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Germany",
+    "segment": "ENTERPRISE",
+    "sales": 198205,
+    "yoy": null,
+    "profit": 4045,
+    "units": 1618
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Germany",
+    "segment": "GOVERNMENT",
+    "sales": 2156605.9000000004,
+    "yoy": null,
+    "profit": 542855.8999999999,
+    "units": 14234
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Germany",
+    "segment": "MIDMARKET",
+    "sales": 56599.5,
+    "yoy": null,
+    "profit": 17699.5,
+    "units": 3890
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Germany",
+    "segment": "SMALL BUSINESS",
+    "sales": 125832,
+    "yoy": null,
+    "profit": 18832,
+    "units": 428
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Mexico",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 8015.28,
+    "yoy": null,
+    "profit": 5813.28,
+    "units": 734
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Mexico",
+    "segment": "ENTERPRISE",
+    "sales": 525525,
+    "yoy": null,
+    "profit": 10725,
+    "units": 4290
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Mexico",
+    "segment": "GOVERNMENT",
+    "sales": 295473.07999999996,
+    "yoy": null,
+    "profit": 65023.08,
+    "units": 7572
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Mexico",
+    "segment": "MIDMARKET",
+    "sales": 43603.2,
+    "yoy": null,
+    "profit": 13323.199999999997,
+    "units": 3028
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "Mexico",
+    "segment": "SMALL BUSINESS",
+    "sales": 293436,
+    "yoy": null,
+    "profit": 46436,
+    "units": 988
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "United States of America",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 8337.6,
+    "yoy": null,
+    "profit": 6021.6,
+    "units": 772
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "United States of America",
+    "segment": "ENTERPRISE",
+    "sales": 164092.5,
+    "yoy": null,
+    "profit": 4972.5,
+    "units": 1326
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "United States of America",
+    "segment": "GOVERNMENT",
+    "sales": 523515.83999999997,
+    "yoy": null,
+    "profit": 110175.84,
+    "units": 7980
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "United States of America",
+    "segment": "MIDMARKET",
+    "sales": 19324.8,
+    "yoy": null,
+    "profit": 5904.799999999999,
+    "units": 1342
+  },
+  {
+    "year": 2013,
+    "monthNum": 10,
+    "monthName": "October",
+    "country": "United States of America",
+    "segment": "SMALL BUSINESS",
+    "sales": 1238760,
+    "yoy": null,
+    "profit": 91760,
+    "units": 4588
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Canada",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 22931.04,
+    "yoy": null,
+    "profit": 16265.04,
+    "units": 2222
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Canada",
+    "segment": "ENTERPRISE",
+    "sales": 313862.5,
+    "yoy": null,
+    "profit": -40617.5,
+    "units": 2954
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Canada",
+    "segment": "GOVERNMENT",
+    "sales": 670490.56,
+    "yoy": null,
+    "profit": 182180.56,
+    "units": 6752
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Canada",
+    "segment": "MIDMARKET",
+    "sales": 20826,
+    "yoy": null,
+    "profit": 5226,
+    "units": 1560
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Canada",
+    "segment": "SMALL BUSINESS",
+    "sales": 391716,
+    "yoy": null,
+    "profit": 40716,
+    "units": 1404
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "France",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 20991.6,
+    "yoy": null,
+    "profit": 15636.599999999999,
+    "units": 1785
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "France",
+    "segment": "ENTERPRISE",
+    "sales": 211233.75,
+    "yoy": null,
+    "profit": -11606.25,
+    "units": 1857
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "France",
+    "segment": "GOVERNMENT",
+    "sales": 642049.1,
+    "yoy": null,
+    "profit": 104784.09999999999,
+    "units": 6749
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "France",
+    "segment": "MIDMARKET",
+    "sales": 4766.85,
+    "yoy": null,
+    "profit": 1556.8500000000004,
+    "units": 321
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "France",
+    "segment": "SMALL BUSINESS",
+    "sales": 106536,
+    "yoy": null,
+    "profit": 10036,
+    "units": 386
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Germany",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 19383,
+    "yoy": null,
+    "profit": 14058,
+    "units": 1775
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Germany",
+    "segment": "ENTERPRISE",
+    "sales": 290625,
+    "yoy": null,
+    "profit": -9375,
+    "units": 2500
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Germany",
+    "segment": "GOVERNMENT",
+    "sales": 741411.4,
+    "yoy": null,
+    "profit": 155401.4,
+    "units": 5459
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Germany",
+    "segment": "MIDMARKET",
+    "sales": 13240.5,
+    "yoy": null,
+    "profit": 3540.5,
+    "units": 970
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Germany",
+    "segment": "SMALL BUSINESS",
+    "sales": 654288,
+    "yoy": null,
+    "profit": 20288,
+    "units": 2536
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Mexico",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 30835.08,
+    "yoy": null,
+    "profit": 22546.08,
+    "units": 2763
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Mexico",
+    "segment": "ENTERPRISE",
+    "sales": 203350,
+    "yoy": null,
+    "profit": 4150,
+    "units": 1660
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Mexico",
+    "segment": "GOVERNMENT",
+    "sales": 677893.28,
+    "yoy": null,
+    "profit": 93873.28,
+    "units": 5980
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Mexico",
+    "segment": "MIDMARKET",
+    "sales": 24123,
+    "yoy": null,
+    "profit": 5423,
+    "units": 1870
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "Mexico",
+    "segment": "SMALL BUSINESS",
+    "sales": 679905,
+    "yoy": null,
+    "profit": 28655,
+    "units": 2605
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "United States of America",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 10944,
+    "yoy": null,
+    "profit": 8208,
+    "units": 912
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "United States of America",
+    "segment": "ENTERPRISE",
+    "sales": 202950,
+    "yoy": null,
+    "profit": -13530,
+    "units": 1804
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "United States of America",
+    "segment": "GOVERNMENT",
+    "sales": 622848.04,
+    "yoy": null,
+    "profit": 87063.04,
+    "units": 3535
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "United States of America",
+    "segment": "MIDMARKET",
+    "sales": 33633.6,
+    "yoy": null,
+    "profit": 8153.5999999999985,
+    "units": 2548
+  },
+  {
+    "year": 2013,
+    "monthNum": 11,
+    "monthName": "November",
+    "country": "United States of America",
+    "segment": "SMALL BUSINESS",
+    "sales": 656370,
+    "yoy": null,
+    "profit": 12870,
+    "units": 2574
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Canada",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 10569.12,
+    "yoy": null,
+    "profit": 7845.120000000001,
+    "units": 908
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Canada",
+    "segment": "ENTERPRISE",
+    "sales": 215550,
+    "yoy": null,
+    "profit": -14370,
+    "units": 1916
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Canada",
+    "segment": "GOVERNMENT",
+    "sales": 641908.07,
+    "yoy": null,
+    "profit": 153553.07,
+    "units": 5191
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Canada",
+    "segment": "MIDMARKET",
+    "sales": 32280,
+    "yoy": null,
+    "profit": 10760,
+    "units": 2152
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Canada",
+    "segment": "SMALL BUSINESS",
+    "sales": 686952,
+    "yoy": null,
+    "profit": 77952,
+    "units": 2436
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "France",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 3341.52,
+    "yoy": null,
+    "profit": 2423.52,
+    "units": 306
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "France",
+    "segment": "ENTERPRISE",
+    "sales": 166725,
+    "yoy": null,
+    "profit": -11115,
+    "units": 1482
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "France",
+    "segment": "GOVERNMENT",
+    "sales": 419412.4,
+    "yoy": null,
+    "profit": 65342.4,
+    "units": 4450
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "France",
+    "segment": "MIDMARKET",
+    "sales": 32558.4,
+    "yoy": null,
+    "profit": 9948.400000000001,
+    "units": 2261
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "France",
+    "segment": "SMALL BUSINESS",
+    "sales": 313104,
+    "yoy": null,
+    "profit": 16604,
+    "units": 1186
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Germany",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 18478.8,
+    "yoy": null,
+    "profit": 13168.8,
+    "units": 1770
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Germany",
+    "segment": "ENTERPRISE",
+    "sales": 104222.5,
+    "yoy": null,
+    "profit": -2217.5,
+    "units": 887
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Germany",
+    "segment": "GOVERNMENT",
+    "sales": 613820.55,
+    "yoy": null,
+    "profit": 111115.55,
+    "units": 4583
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Germany",
+    "segment": "MIDMARKET",
+    "sales": 30153,
+    "yoy": null,
+    "profit": 8993,
+    "units": 2116
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Germany",
+    "segment": "SMALL BUSINESS",
+    "sales": 91182,
+    "yoy": null,
+    "profit": 7682,
+    "units": 334
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Mexico",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 15180,
+    "yoy": null,
+    "profit": 11055,
+    "units": 1375
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Mexico",
+    "segment": "ENTERPRISE",
+    "sales": 303257.5,
+    "yoy": null,
+    "profit": -35262.5,
+    "units": 2821
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Mexico",
+    "segment": "GOVERNMENT",
+    "sales": 688614.64,
+    "yoy": null,
+    "profit": 169044.63999999998,
+    "units": 4430
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Mexico",
+    "segment": "MIDMARKET",
+    "sales": 5016,
+    "yoy": null,
+    "profit": 1216,
+    "units": 380
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "Mexico",
+    "segment": "SMALL BUSINESS",
+    "sales": 313500,
+    "yoy": null,
+    "profit": 38500,
+    "units": 1100
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "United States of America",
+    "segment": "CHANNEL PARTNERS",
+    "sales": 20794.8,
+    "yoy": null,
+    "profit": 14749.8,
+    "units": 2015
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "United States of America",
+    "segment": "ENTERPRISE",
+    "sales": 259037.5,
+    "yoy": null,
+    "profit": -33522.5,
+    "units": 2438
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "United States of America",
+    "segment": "GOVERNMENT",
+    "sales": 131477.78,
+    "yoy": null,
+    "profit": 38042.78,
+    "units": 3700
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "United States of America",
+    "segment": "MIDMARKET",
+    "sales": 28297.5,
+    "yoy": null,
+    "profit": 9047.5,
+    "units": 1925
+  },
+  {
+    "year": 2013,
+    "monthNum": 12,
+    "monthName": "December",
+    "country": "United States of America",
+    "segment": "SMALL BUSINESS",
+    "sales": 223008,
+    "yoy": null,
+    "profit": 21008,
+    "units": 808
+  }
+];
+
+        // Populate filter select elements
+        const countries = [...new Set(rawData.map(r => r.country))].sort();
+        const segments = [...new Set(rawData.map(r => r.segment))].sort();
+
+        const countrySelect = document.getElementById('countryFilter');
+        countries.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            countrySelect.appendChild(opt);
+        });
+
+        const segmentSelect = document.getElementById('segmentFilter');
+        segments.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            segmentSelect.appendChild(opt);
+        });
+
+        // Initialize variables for Chart.js instances
+        let salesChart = null;
+        let yoyChartInstance = null;
+
+        // Month formatting helper
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June", 
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        // Format Currency
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
+            }).format(val);
+        }
+
+        // Format Percent
+        function formatPercent(val) {
+            if (val === null || val === undefined || isNaN(val)) return 'N/A';
+            return (val * 100).toFixed(1) + '%';
+        }
+
+        function updateDashboard() {
+            const selectedCountry = document.getElementById('countryFilter').value;
+            const selectedSegment = document.getElementById('segmentFilter').value;
+
+            // Filter data
+            let filtered = rawData;
+            if (selectedCountry !== 'All') {
+                filtered = filtered.filter(r => r.country === selectedCountry);
+            }
+            if (selectedSegment !== 'All') {
+                filtered = filtered.filter(r => r.segment === selectedSegment);
+            }
+
+            // Aggregate Monthly Data for 2013 and 2014
+            const monthlyData = {};
+            for (let m = 1; m <= 12; m++) {
+                monthlyData[m] = {
+                    monthName: monthNames[m-1],
+                    sales2013: 0,
+                    sales2014: 0,
+                    profit2014: 0,
+                    units2014: 0
+                };
+            }
+
+            filtered.forEach(r => {
+                if (r.year === 2013) {
+                    monthlyData[r.monthNum].sales2013 += r.sales;
+                } else if (r.year === 2014) {
+                    monthlyData[r.monthNum].sales2014 += r.sales;
+                    monthlyData[r.monthNum].profit2014 += r.profit;
+                    monthlyData[r.monthNum].units2014 += r.units;
+                }
+            });
+
+            // Calculate KPIs for 2014
+            let totalSales2014 = 0;
+            let totalSales2013 = 0;
+            let totalProfit2014 = 0;
+            let totalUnits2014 = 0;
+            
+            // For YoY, we calculate average YoY growth for the months that have comparative data (Sept-Dec)
+            let yoySum = 0;
+            let yoyCount = 0;
+
+            const tableRows = [];
+            const labels = [];
+            const sales13Data = [];
+            const sales14Data = [];
+            const yoyValues = [];
+            const yoyColors = [];
+
+            for (let m = 1; m <= 12; m++) {
+                const item = monthlyData[m];
+                totalSales2014 += item.sales2014;
+                totalSales2013 += item.sales2013;
+                totalProfit2014 += item.profit2014;
+                totalUnits2014 += item.units2014;
+
+                let yoyVal = null;
+                if (item.sales2013 > 0 && item.sales2014 > 0) {
+                    yoyVal = (item.sales2014 - item.sales2013) / item.sales2013;
+                    yoySum += yoyVal;
+                    yoyCount++;
+                }
+
+                labels.push(item.monthName);
+                sales13Data.push(item.sales2013 > 0 ? item.sales2013 : null);
+                sales14Data.push(item.sales2014 > 0 ? item.sales2014 : null);
+                
+                // Only show YoY chart values if we have comparison
+                yoyValues.push(yoyVal !== null ? yoyVal * 100 : null);
+                yoyColors.push(yoyVal >= 0 ? '#1AAB40' : '#D64550');
+
+                // Build Table row HTML
+                const yoyText = yoyVal !== null ? formatPercent(yoyVal) : '-';
+                const yoyClass = yoyVal !== null ? (yoyVal >= 0 ? 'badge-positive' : 'badge-negative') : '';
+                const yoyBadge = yoyVal !== null ? `<span class="badge ${yoyClass}">${yoyText}</span>` : '<span style="color:var(--text-secondary)">-</span>';
+
+                tableRows.push(`
+                    <tr>
+                        <td><strong>${item.monthName}</strong></td>
+                        <td>${item.sales2013 > 0 ? formatCurrency(item.sales2013) : '-'}</td>
+                        <td>${item.sales2014 > 0 ? formatCurrency(item.sales2014) : '-'}</td>
+                        <td>${yoyBadge}</td>
+                        <td>${item.sales2014 > 0 ? formatCurrency(item.profit2014) : '-'}</td>
+                        <td>${item.sales2014 > 0 ? item.units2014.toLocaleString() : '-'}</td>
+                    </tr>
+                `);
+            }
+
+            // Render KPIs
+            document.getElementById('kpiSales').textContent = formatCurrency(totalSales2014);
+            document.getElementById('kpiProfit').textContent = formatCurrency(totalProfit2014);
+            document.getElementById('kpiUnits').textContent = totalUnits2014.toLocaleString();
+
+            const avgYoY = yoyCount > 0 ? yoySum / yoyCount : 0;
+            document.getElementById('kpiYoY').textContent = formatPercent(avgYoY);
+
+            // Set table
+            document.getElementById('dataTableBody').innerHTML = tableRows.join('');
+
+            // Render Charts
+            renderCharts(labels, sales13Data, sales14Data, yoyValues, yoyColors);
+        }
+
+        function renderCharts(labels, sales13, sales14, yoy, yoyColors) {
+            // Destroy existing charts to reload
+            if (salesChart) salesChart.destroy();
+            if (yoyChartInstance) yoyChartInstance.destroy();
+
+            // Sales Trend Chart (Double line)
+            const ctxSales = document.getElementById('salesTrendChart').getContext('2d');
+            salesChart = new Chart(ctxSales, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '2013 Sales',
+                            data: sales13,
+                            borderColor: 'rgba(0, 0, 0, 0.25)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointBackgroundColor: 'rgba(0, 0, 0, 0.35)',
+                            tension: 0.3,
+                            spanGaps: true
+                        },
+                        {
+                            label: '2014 Sales',
+                            data: sales14,
+                            borderColor: '#FF7900',
+                            backgroundColor: 'rgba(255, 121, 0, 0.05)',
+                            fill: true,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#FF7900',
+                            tension: 0.3,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#000000', font: { family: 'Outfit', size: 12 } }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#555555' } },
+                        y: { 
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }, 
+                            ticks: { 
+                                color: '#555555',
+                                callback: function(value) { return '$' + (value/1000).toLocaleString() + 'k'; }
+                            } 
+                        }
+                    }
+                }
+            });
+
+            // YoY Growth Bar Chart
+            const ctxYoY = document.getElementById('yoyChart').getContext('2d');
+            
+            // Only show labels/values for months with YoY growth (Sept - Dec)
+            const yoyLabels = labels.slice(8); // Sept, Oct, Nov, Dec
+            const yoyData = yoy.slice(8);
+            const yoyBarColors = yoyColors.slice(8);
+
+            yoyChartInstance = new Chart(ctxYoY, {
+                type: 'bar',
+                data: {
+                    labels: yoyLabels,
+                    datasets: [{
+                        label: 'YoY Growth (%)',
+                        data: yoyData,
+                        backgroundColor: yoyBarColors,
+                        borderRadius: 8,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#555555', font: { family: 'Outfit' } } },
+                        y: { 
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }, 
+                            ticks: { 
+                                color: '#555555',
+                                callback: function(value) { return value.toFixed(0) + '%'; }
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // Run on load
+        updateDashboard();
+    </script>
+</body>
+</html>

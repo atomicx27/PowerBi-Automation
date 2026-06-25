@@ -1,0 +1,4 @@
+node_modules/
+.pbi/
+*.log
+.DS_Store

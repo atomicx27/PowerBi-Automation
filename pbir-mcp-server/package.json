@@ -1,0 +1,11 @@
+{
+  "name": "powerbi-report-layout-mcp",
+  "version": "1.0.0",
+  "description": "Custom MCP server for Power BI PBIR report visual and page generation",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {}
+}
