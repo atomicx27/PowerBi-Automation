@@ -46,7 +46,7 @@ function findReportInWorkspace(dir) {
   return null;
 }
 
-const knownMeasures = ['Total Sales', 'Sales YoY Growth'];
+const knownMeasures = ['Total Sales', 'Sales YoY Growth', 'Total Profit', 'Profit Margin', 'Profit YoY Growth'];
 function getFieldProjection(queryRef) {
   const parts = queryRef.split('.');
   const entity = parts[0];
@@ -136,7 +136,7 @@ function buildVisualJson(visualType, fields, layout) {
       ]
     };
   } else if (visualType === 'pieChart' || visualType === 'donutChart') {
-    visualObj.visual.query.queryState.Legend = {
+    visualObj.visual.query.queryState.Category = {
       "projections": [
         getFieldProjection(fields.legend)
       ]
