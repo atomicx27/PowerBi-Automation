@@ -135,9 +135,142 @@ function buildVisualJson(visualType, fields, layout) {
         }
       ]
     };
+  } else if (visualType === 'pieChart' || visualType === 'donutChart') {
+    visualObj.visual.query.queryState.Legend = {
+      "projections": [
+        getFieldProjection(fields.legend)
+      ]
+    };
+    visualObj.visual.query.queryState.Y = {
+      "projections": [
+        getFieldProjection(fields.value)
+      ]
+    };
+  } else if (visualType === 'table') {
+    visualObj.visual.query.queryState.Values = {
+      "projections": (Array.isArray(fields.columns) ? fields.columns : [fields.columns]).map(c => getFieldProjection(c))
+    };
+  } else if (visualType === 'pivotTable') {
+    if (fields.rows) {
+      visualObj.visual.query.queryState.Rows = {
+        "projections": (Array.isArray(fields.rows) ? fields.rows : [fields.rows]).map(r => getFieldProjection(r))
+      };
+    }
+    if (fields.columns) {
+      visualObj.visual.query.queryState.Columns = {
+        "projections": (Array.isArray(fields.columns) ? fields.columns : [fields.columns]).map(c => getFieldProjection(c))
+      };
+    }
+    if (fields.values) {
+      visualObj.visual.query.queryState.Values = {
+        "projections": (Array.isArray(fields.values) ? fields.values : [fields.values]).map(v => getFieldProjection(v))
+      };
+    }
   }
 
   return { visualName, visualObj };
+}
+
+function applyVisualFormatting(visualObj, formatArgs) {
+  if (!visualObj.visual.objects) {
+    visualObj.visual.objects = {};
+  }
+  
+  const objects = visualObj.visual.objects;
+  
+  if (formatArgs.title) {
+    const titleProps = {};
+    if (formatArgs.title.text !== undefined) {
+      titleProps.text = { "expr": { "Literal": { "Value": `'${formatArgs.title.text}'` } } };
+    }
+    if (formatArgs.title.fontSize !== undefined) {
+      titleProps.fontSize = { "expr": { "Literal": { "Value": `${formatArgs.title.fontSize}` } } };
+    }
+    if (formatArgs.title.alignment !== undefined) {
+      titleProps.alignment = { "expr": { "Literal": { "Value": `'${formatArgs.title.alignment}'` } } };
+    }
+    if (formatArgs.title.fontColor !== undefined) {
+      titleProps.fontColor = { "solid": { "color": { "expr": { "Literal": { "Value": `'${formatArgs.title.fontColor}'` } } } } };
+    }
+    objects.title = [{ "properties": titleProps }];
+  }
+
+  if (formatArgs.dataLabels) {
+    const labelProps = {};
+    if (formatArgs.dataLabels.show !== undefined) {
+      labelProps.show = { "expr": { "Literal": { "Value": `${formatArgs.dataLabels.show}` } } };
+    }
+    if (formatArgs.dataLabels.fontSize !== undefined) {
+      labelProps.fontSize = { "expr": { "Literal": { "Value": `${formatArgs.dataLabels.fontSize}` } } };
+    }
+    if (formatArgs.dataLabels.color !== undefined) {
+      labelProps.color = { "solid": { "color": { "expr": { "Literal": { "Value": `'${formatArgs.dataLabels.color}'` } } } } };
+    }
+    objects.labels = [{ "properties": labelProps }];
+  }
+
+  if (formatArgs.containerStyle) {
+    if (formatArgs.containerStyle.borderShow !== undefined || formatArgs.containerStyle.borderColor !== undefined) {
+      const borderProps = {};
+      if (formatArgs.containerStyle.borderShow !== undefined) {
+        borderProps.show = { "expr": { "Literal": { "Value": `${formatArgs.containerStyle.borderShow}` } } };
+      }
+      if (formatArgs.containerStyle.borderColor !== undefined) {
+        borderProps.color = { "solid": { "color": { "expr": { "Literal": { "Value": `'${formatArgs.containerStyle.borderColor}'` } } } } };
+      }
+      objects.border = [{ "properties": borderProps }];
+    }
+    if (formatArgs.containerStyle.backgroundShow !== undefined || formatArgs.containerStyle.backgroundTransparency !== undefined) {
+      const bgProps = {};
+      if (formatArgs.containerStyle.backgroundShow !== undefined) {
+        bgProps.show = { "expr": { "Literal": { "Value": `${formatArgs.containerStyle.backgroundShow}` } } };
+      }
+      if (formatArgs.containerStyle.backgroundTransparency !== undefined) {
+        bgProps.transparency = { "expr": { "Literal": { "Value": `${formatArgs.containerStyle.backgroundTransparency}` } } };
+      }
+      objects.background = [{ "properties": bgProps }];
+    }
+  }
+
+  if (formatArgs.legend) {
+    const legendProps = {};
+    if (formatArgs.legend.show !== undefined) {
+      legendProps.show = { "expr": { "Literal": { "Value": `${formatArgs.legend.show}` } } };
+    }
+    if (formatArgs.legend.position !== undefined) {
+      legendProps.position = { "expr": { "Literal": { "Value": `'${formatArgs.legend.position}'` } } };
+    }
+    objects.legend = [{ "properties": legendProps }];
+  }
+
+  if (formatArgs.axisOverrides) {
+    if (formatArgs.axisOverrides.xAxisShow !== undefined || formatArgs.axisOverrides.xAxisTitleShow !== undefined) {
+      const xAxisProps = {};
+      if (formatArgs.axisOverrides.xAxisShow !== undefined) {
+        xAxisProps.show = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.xAxisShow}` } } };
+      }
+      if (formatArgs.axisOverrides.xAxisTitleShow !== undefined) {
+        xAxisProps.showAxisTitle = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.xAxisTitleShow}` } } };
+      }
+      objects.categoryAxis = [{ "properties": xAxisProps }];
+    }
+    if (formatArgs.axisOverrides.yAxisShow !== undefined || formatArgs.axisOverrides.yAxisTitleShow !== undefined || formatArgs.axisOverrides.yAxisMin !== undefined || formatArgs.axisOverrides.yAxisMax !== undefined) {
+      const yAxisProps = {};
+      if (formatArgs.axisOverrides.yAxisShow !== undefined) {
+        yAxisProps.show = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.yAxisShow}` } } };
+      }
+      if (formatArgs.axisOverrides.yAxisTitleShow !== undefined) {
+        yAxisProps.showAxisTitle = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.yAxisTitleShow}` } } };
+      }
+      if (formatArgs.axisOverrides.yAxisMin !== undefined) {
+        yAxisProps.start = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.yAxisMin}` } } };
+      }
+      if (formatArgs.axisOverrides.yAxisMax !== undefined) {
+        yAxisProps.end = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.yAxisMax}` } } };
+      }
+      objects.valueAxis = [{ "properties": yAxisProps }];
+    }
+  }
 }
 
 // Core Tool implementations
@@ -336,6 +469,300 @@ const tools = {
     return {
       message: `Visual '${visualId}' deleted successfully.`
     };
+  },
+
+  create_table: (args) => {
+    if (!activeReportPath) {
+      throw new Error("No active report project connected. Call connect_project first.");
+    }
+    const { pageId, isMatrix, rows = [], columns = [], values = [], layout = {} } = args;
+    if (!pageId) {
+      throw new Error("Parameter 'pageId' is required.");
+    }
+    
+    const visualType = isMatrix ? 'pivotTable' : 'table';
+    const fields = isMatrix ? { rows, columns, values } : { columns };
+    
+    return tools.add_visual({ pageId, visualType, fields, layout });
+  },
+
+  format_visual: (args) => {
+    if (!activeReportPath) {
+      throw new Error("No active report project connected. Call connect_project first.");
+    }
+    const { pageId, visualId, title, dataLabels, axisOverrides, containerStyle, legend } = args;
+    if (!pageId || !visualId) {
+      throw new Error("Parameters 'pageId' and 'visualId' are required.");
+    }
+
+    const visualJsonPath = path.join(activeReportPath, 'definition', 'pages', pageId, 'visuals', visualId, 'visual.json');
+    if (!fs.existsSync(visualJsonPath)) {
+      throw new Error(`Visual '${visualId}' on page '${pageId}' not found.`);
+    }
+
+    const visualObj = JSON.parse(fs.readFileSync(visualJsonPath, 'utf8'));
+    applyVisualFormatting(visualObj, { title, dataLabels, axisOverrides, containerStyle, legend });
+    
+    fs.writeFileSync(visualJsonPath, JSON.stringify(visualObj, null, 2), 'utf8');
+    return { message: `Visual '${visualId}' updated successfully.` };
+  },
+
+  auto_arrange_page: (args) => {
+    if (!activeReportPath) {
+      throw new Error("No active report project connected. Call connect_project first.");
+    }
+    const { pageId, template = 'dynamicGrid' } = args;
+    if (!pageId) {
+      throw new Error("Parameter 'pageId' is required.");
+    }
+
+    const visualsDir = path.join(activeReportPath, 'definition', 'pages', pageId, 'visuals');
+    if (!fs.existsSync(visualsDir)) {
+      return { message: "No visuals on this page to arrange." };
+    }
+
+    const visualNames = fs.readdirSync(visualsDir).filter(name => {
+      return fs.statSync(path.join(visualsDir, name)).isDirectory();
+    });
+
+    const visuals = visualNames.map(name => {
+      const jsonPath = path.join(visualsDir, name, 'visual.json');
+      return {
+        name,
+        path: jsonPath,
+        data: JSON.parse(fs.readFileSync(jsonPath, 'utf8'))
+      };
+    });
+
+    if (visuals.length === 0) {
+      return { message: "No visuals found on this page." };
+    }
+
+    if (template === 'kpiHeader') {
+      const kpis = [];
+      const charts = [];
+      visuals.forEach(v => {
+        const type = v.data.visual ? v.data.visual.visualType : 'group';
+        if (type === 'card' || type === 'slicer') {
+          kpis.push(v);
+        } else {
+          charts.push(v);
+        }
+      });
+
+      const kpiWidth = 200;
+      const kpiHeight = 100;
+      const kpiPadding = 20;
+      kpis.forEach((kpi, idx) => {
+        kpi.data.position = {
+          x: 30 + idx * (kpiWidth + kpiPadding),
+          y: 30,
+          width: kpiWidth,
+          height: kpiHeight
+        };
+      });
+
+      const chartY = 160;
+      const chartHeight = 520;
+      const chartPadding = 20;
+      const chartCount = charts.length;
+      if (chartCount > 0) {
+        const chartWidth = Math.floor((1280 - 60 - chartPadding * (chartCount - 1)) / chartCount);
+        charts.forEach((chart, idx) => {
+          chart.data.position = {
+            x: 30 + idx * (chartWidth + chartPadding),
+            y: chartY,
+            width: chartWidth,
+            height: chartHeight
+          };
+        });
+      }
+    } else if (template === 'splitScreen' && visuals.length === 2) {
+      const width = 590;
+      const height = 660;
+      visuals[0].data.position = { x: 30, y: 30, width, height };
+      visuals[1].data.position = { x: 660, y: 30, width, height };
+    } else if (template === 'alignLeft') {
+      const padding = 30;
+      const width = 400;
+      const height = Math.max(50, Math.floor((720 - padding * (visuals.length + 1)) / visuals.length));
+      visuals.forEach((visual, idx) => {
+        visual.data.position = {
+          x: padding,
+          y: padding + idx * (height + padding),
+          width,
+          height
+        };
+      });
+    } else if (template === 'alignTop') {
+      const padding = 30;
+      const height = 200;
+      const width = Math.max(50, Math.floor((1280 - padding * (visuals.length + 1)) / visuals.length));
+      visuals.forEach((visual, idx) => {
+        visual.data.position = {
+          x: padding + idx * (width + padding),
+          y: padding,
+          width,
+          height
+        };
+      });
+    } else {
+      // Default: dynamicGrid
+      const cols = Math.ceil(Math.sqrt(visuals.length));
+      const rows = Math.ceil(visuals.length / cols);
+      const padding = 30;
+      const cardWidth = Math.floor((1280 - padding * (cols + 1)) / cols);
+      const cardHeight = Math.floor((720 - padding * (rows + 1)) / rows);
+
+      visuals.forEach((visual, idx) => {
+        const colIdx = idx % cols;
+        const rowIdx = Math.floor(idx / cols);
+        visual.data.position = {
+          x: padding + colIdx * (cardWidth + padding),
+          y: padding + rowIdx * (cardHeight + padding),
+          width: cardWidth,
+          height: cardHeight
+        };
+      });
+    }
+
+    // Write changes back to disk
+    visuals.forEach(v => {
+      fs.writeFileSync(v.path, JSON.stringify(v.data, null, 2), 'utf8');
+    });
+
+    return { message: `Arranged ${visuals.length} visuals using template '${template}'.` };
+  },
+
+  add_action_button: (args) => {
+    if (!activeReportPath) {
+      throw new Error("No active report project connected. Call connect_project first.");
+    }
+    const { pageId, buttonType, label, targetPageName, layout = {} } = args;
+    if (!pageId || !buttonType) {
+      throw new Error("Parameters 'pageId' and 'buttonType' are required.");
+    }
+
+    const visualName = `Button_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    const visualObj = {
+      "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.1.0/schema.json",
+      "name": visualName,
+      "position": {
+        "x": layout.x || 0,
+        "y": layout.y || 0,
+        "width": layout.width || 120,
+        "height": layout.height || 40
+      },
+      "visual": {
+        "visualType": "actionButton",
+        "objects": {
+          "action": [
+            {
+              "properties": {
+                "type": { "expr": { "Literal": { "Value": buttonType === 'pageNavigation' ? "'PageNavigation'" : "'ClearAllFilters'" } } }
+              }
+            }
+          ],
+          "text": [
+            {
+              "properties": {
+                "text": { "expr": { "Literal": { "Value": `'${label || (buttonType === 'pageNavigation' ? 'Go to Page' : 'Clear Filters')}'` } } }
+              }
+            }
+          ]
+        }
+      }
+    };
+
+    if (buttonType === 'pageNavigation' && targetPageName) {
+      visualObj.visual.objects.action[0].properties.page = {
+        "expr": { "Literal": { "Value": `'${targetPageName}'` } }
+      };
+    }
+
+    const visualFolder = path.join(activeReportPath, 'definition', 'pages', pageId, 'visuals', visualName);
+    fs.mkdirSync(visualFolder, { recursive: true });
+    fs.writeFileSync(path.join(visualFolder, 'visual.json'), JSON.stringify(visualObj, null, 2), 'utf8');
+
+    return {
+      message: `Action button '${visualName}' of type '${buttonType}' created successfully.`,
+      visualId: visualName
+    };
+  },
+
+  group_visuals: (args) => {
+    if (!activeReportPath) {
+      throw new Error("No active report project connected. Call connect_project first.");
+    }
+    const { pageId, visualIds, groupName = 'MyGroup' } = args;
+    if (!pageId || !visualIds || !Array.isArray(visualIds)) {
+      throw new Error("Parameters 'pageId' and 'visualIds' (array) are required.");
+    }
+
+    const groupContainerName = `Group_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    const groupObj = {
+      "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.1.0/schema.json",
+      "name": groupContainerName,
+      "position": {
+        "x": 0,
+        "y": 0,
+        "width": 100,
+        "height": 100
+      },
+      "visualGroup": {
+        "displayName": groupName
+      }
+    };
+
+    const visualsDir = path.join(activeReportPath, 'definition', 'pages', pageId, 'visuals');
+    const groupFolder = path.join(visualsDir, groupContainerName);
+    fs.mkdirSync(groupFolder, { recursive: true });
+    fs.writeFileSync(path.join(groupFolder, 'visual.json'), JSON.stringify(groupObj, null, 2), 'utf8');
+
+    visualIds.forEach(vid => {
+      const childPath = path.join(visualsDir, vid, 'visual.json');
+      if (fs.existsSync(childPath)) {
+        const childObj = JSON.parse(fs.readFileSync(childPath, 'utf8'));
+        childObj.parentGroupName = groupContainerName;
+        fs.writeFileSync(childPath, JSON.stringify(childObj, null, 2), 'utf8');
+      }
+    });
+
+    return {
+      message: `Group '${groupName}' created as visual container '${groupContainerName}'.`,
+      groupId: groupContainerName
+    };
+  },
+
+  sync_slicers: (args) => {
+    if (!activeReportPath) {
+      throw new Error("No active report project connected. Call connect_project first.");
+    }
+    const { pageId, visualId, syncPageIds = [] } = args;
+    if (!pageId || !visualId) {
+      throw new Error("Parameters 'pageId' and 'visualId' are required.");
+    }
+
+    const visualJsonPath = path.join(activeReportPath, 'definition', 'pages', pageId, 'visuals', visualId, 'visual.json');
+    if (!fs.existsSync(visualJsonPath)) {
+      throw new Error(`Slicer visual '${visualId}' on page '${pageId}' not found.`);
+    }
+
+    const visualObj = JSON.parse(fs.readFileSync(visualJsonPath, 'utf8'));
+    if (!visualObj.visual.objects) {
+      visualObj.visual.objects = {};
+    }
+    visualObj.visual.objects.slicerSync = [
+      {
+        "properties": {
+          "sync": { "expr": { "Literal": { "Value": "true" } } }
+        }
+      }
+    ];
+
+    fs.writeFileSync(visualJsonPath, JSON.stringify(visualObj, null, 2), 'utf8');
+    return { message: `Slicer '${visualId}' sync settings updated.` };
   }
 };
 
@@ -417,7 +844,7 @@ rl.on('line', (line) => {
             },
             {
               name: "add_visual",
-              description: "Add a visual chart (Card, Line Chart, Column Chart, or Slicer) to an existing report page.",
+              description: "Add a visual chart (Card, Line Chart, Column Chart, Bar Chart, Slicer, Pie Chart, Donut Chart, Table, or Pivot Table) to an existing report page.",
               inputSchema: {
                 type: "object",
                 properties: {
@@ -427,12 +854,12 @@ rl.on('line', (line) => {
                   },
                   visualType: {
                     type: "string",
-                    enum: ["card", "lineChart", "clusteredColumnChart", "clusteredBarChart", "slicer"],
+                    enum: ["card", "lineChart", "clusteredColumnChart", "clusteredBarChart", "slicer", "pieChart", "donutChart", "table", "pivotTable"],
                     description: "The visual type chart."
                   },
                   fields: {
                     type: "object",
-                    description: "Field bindings. For card: {value: 'table.column'}. For chart: {xAxis: 'table.col', yAxis: ['table.col']}. For slicer: {field: 'table.col', isDropdown: true/false}."
+                    description: "Field bindings. For card: {value: 'table.column'}. For chart: {xAxis: 'table.col', yAxis: ['table.col']}. For slicer: {field: 'table.col', isDropdown: true/false}. For pie/donut: {legend: 'table.col', value: 'table.col'}. For table: {columns: ['table.col']}. For pivotTable: {rows: ['table.col'], columns: ['table.col'], values: ['table.col']}."
                   },
                   layout: {
                     type: "object",
@@ -456,6 +883,182 @@ rl.on('line', (line) => {
                 properties: {
                   pageId: { type: "string" },
                   visualId: { type: "string" }
+                },
+                required: ["pageId", "visualId"]
+              }
+            },
+            {
+              name: "create_table",
+              description: "Create a Table or Matrix (Pivot Table) visual referencing selected model fields.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  pageId: {
+                    type: "string",
+                    description: "The folder/ID name of the page to add the visual to."
+                  },
+                  isMatrix: {
+                    type: "boolean",
+                    description: "True if creating a Pivot Table (Matrix), false for a regular Table."
+                  },
+                  columns: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of columns (dimensions) for the table or columns area of the matrix."
+                  },
+                  rows: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of rows (dimensions) for the matrix."
+                  },
+                  values: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of values (measures/fields) to display."
+                  },
+                  layout: {
+                    type: "object",
+                    properties: {
+                      x: { type: "integer" },
+                      y: { type: "integer" },
+                      width: { type: "integer" },
+                      height: { type: "integer" },
+                      zIndex: { type: "integer" }
+                    }
+                  }
+                },
+                required: ["pageId"]
+              }
+            },
+            {
+              name: "format_visual",
+              description: "Modify visual layout styling, titles, borders, data labels, and colors.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  pageId: { type: "string", description: "Page ID containing the visual." },
+                  visualId: { type: "string", description: "ID/folder name of the visual." },
+                  title: {
+                    type: "object",
+                    properties: {
+                      text: { type: "string" },
+                      fontSize: { type: "integer" },
+                      alignment: { type: "string", enum: ["Left", "Center", "Right"] },
+                      fontColor: { type: "string", description: "Hex color code e.g. '#D61A3C'" }
+                    }
+                  },
+                  dataLabels: {
+                    type: "object",
+                    properties: {
+                      show: { type: "boolean" },
+                      fontSize: { type: "integer" },
+                      color: { type: "string", description: "Hex color code" }
+                    }
+                  },
+                  axisOverrides: {
+                    type: "object",
+                    properties: {
+                      xAxisShow: { type: "boolean" },
+                      xAxisTitleShow: { type: "boolean" },
+                      yAxisShow: { type: "boolean" },
+                      yAxisTitleShow: { type: "boolean" },
+                      yAxisMin: { type: "number" },
+                      yAxisMax: { type: "number" }
+                    }
+                  },
+                  containerStyle: {
+                    type: "object",
+                    properties: {
+                      borderShow: { type: "boolean" },
+                      borderColor: { type: "string", description: "Hex color code" },
+                      backgroundShow: { type: "boolean" },
+                      backgroundTransparency: { type: "number", description: "0 to 100 percentage" }
+                    }
+                  },
+                  legend: {
+                    type: "object",
+                    properties: {
+                      show: { type: "boolean" },
+                      position: { type: "string", description: "e.g. Top, Bottom, Left, Right" }
+                    }
+                  }
+                },
+                required: ["pageId", "visualId"]
+              }
+            },
+            {
+              name: "auto_arrange_page",
+              description: "Align and lay out page visuals automatically using grid templates.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  pageId: { type: "string", description: "Page ID to auto-arrange." },
+                  template: {
+                    type: "string",
+                    enum: ["dynamicGrid", "kpiHeader", "splitScreen", "alignLeft", "alignTop"],
+                    description: "Layout template selection."
+                  }
+                },
+                required: ["pageId"]
+              }
+            },
+            {
+              name: "add_action_button",
+              description: "Add an interactive action button (navigation or clearing filters).",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  pageId: { type: "string", description: "Page ID to add the button to." },
+                  buttonType: {
+                    type: "string",
+                    enum: ["pageNavigation", "clearFilters"],
+                    description: "Type of interactive action."
+                  },
+                  label: { type: "string", description: "Text label of the button." },
+                  targetPageName: { type: "string", description: "Target page ID/name for pageNavigation." },
+                  layout: {
+                    type: "object",
+                    properties: {
+                      x: { type: "integer" },
+                      y: { type: "integer" },
+                      width: { type: "integer" },
+                      height: { type: "integer" }
+                    }
+                  }
+                },
+                required: ["pageId", "buttonType"]
+              }
+            },
+            {
+              name: "group_visuals",
+              description: "Group multiple visuals together under a visual group folder.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  pageId: { type: "string", description: "Page ID containing the visuals." },
+                  visualIds: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of visual IDs to include in the group."
+                  },
+                  groupName: { type: "string", description: "Name of the visual group display." }
+                },
+                required: ["pageId", "visualIds"]
+              }
+            },
+            {
+              name: "sync_slicers",
+              description: "Synchronize a slicer visual across other report pages.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  pageId: { type: "string", description: "Page ID containing the slicer." },
+                  visualId: { type: "string", description: "Slicer visual ID." },
+                  syncPageIds: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of page IDs to synchronize this slicer with."
+                  }
                 },
                 required: ["pageId", "visualId"]
               }

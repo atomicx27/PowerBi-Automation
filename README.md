@@ -10,8 +10,14 @@ A standalone Node.js MCP server that allows AI coding assistants to programmatic
   * `connect_project`: Connects to a local `.Report` folder.
   * `list_pages`: Lists all report pages.
   * `create_page`: Creates a new report page with standard metadata.
-  * `add_visual`: Generates and adds visual containers (supporting column/bar/line charts, cards, and slicers) to any report page using Fabric visual container schemas.
+  * `add_visual`: Generates and adds visual containers (supporting column/bar/line/pie/donut charts, cards, slicers, tables, and pivot tables) to any report page using Fabric visual container schemas.
   * `delete_visual`: Safe deletion of visuals.
+  * `create_table`: Programmatically constructs Table or Pivot Table (Matrix) visuals.
+  * `format_visual`: Overrides formatting properties inside `visual.json` (such as title, labels, border, legend, and axis settings) using Fabric expression-based single-quoted literals.
+  * `auto_arrange_page`: Auto-arranges all visuals on a page based on layout templates (`dynamicGrid`, `kpiHeader`, `splitScreen`, `alignLeft`, `alignTop`).
+  * `add_action_button`: Adds interactive navigation or filter buttons.
+  * `group_visuals`: Bundles multiple visuals together under a visual group container.
+  * `sync_slicers`: Configures sync slicer options to enable cross-page filter sharing.
 
 ### 2. YoY Sales Growth HTML Dashboard (`dashboard.html`)
 An interactive, responsive HTML5 dashboard mirroring the Power BI project's metrics:
@@ -46,6 +52,10 @@ Utility scripts for semantic model discovery, querying dynamic ports, and genera
 3. Start the server (runs via stdin/stdout JSON-RPC protocol):
    ```bash
    node index.js
+   ```
+4. Run the advanced automated test suite to verify the server's functionality:
+   ```bash
+   node test_advanced_mcp.js
    ```
 
 ### Registering with Claude/Claude Desktop
