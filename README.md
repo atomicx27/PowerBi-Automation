@@ -13,7 +13,7 @@ By interfacing directly with Microsoft Fabric's new text-based report structures
 ### 1. Enhanced Report Layout Automation (PBIR)
 * **31+ Native Visual Types:** Instantiates and places everything from standard charts (Column, Bar, Line, Pie, Donut, Treemap, Waterfall, Combo) to advanced AI visuals (`decompositionTree`, `keyInfluencers`), maps (`azureMap`), gauges, KPIs, basic shapes, and images.
 * **Layout Collision Auditor (`audit_layout`):** Scans the coordinates of all visual containers on a page, identifies overlaps, and automatically shifts elements downward to preserve clean, grid-aligned page hierarchies.
-* **Modern Style Presets:** Instantly applies unified visual themes (such as `glassmorphism`, `darkMinimal`, `neonGradient`, `orangeBrand`, and `redCorporate`) to cards, slicers, and containers, which merge with custom styling overrides.
+* **Modern Style Presets:** Instantly applies unified visual themes (such as `glassmorphism`, `darkMinimal`, `neonGradient`, and `redCorporate`) to cards, slicers, and containers, which merge with custom styling overrides.
 * **Button Slicer Grid Auto-Sensing:** Configures the modern `advancedSlicerVisual` grid layouts, dynamically selecting rows/columns based on the visual's aspect ratio.
 
 ### 2. DevOps & Governance (TMDL)
