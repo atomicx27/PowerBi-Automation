@@ -723,7 +723,7 @@ function runMcpSession() {
       assert(!mapResp.result.isError);
       const mapId = JSON.parse(mapResp.result.content[0].text).visualId;
       const mapJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', mapId, 'visual.json'), 'utf8'));
-      assert.equal(mapJson.visual.visualType, "map");
+      assert.equal(mapJson.visual.visualType, "azureMap");
       assert(mapJson.visual.query.queryState.Location);
       assert(mapJson.visual.query.queryState.Size);
       console.log("✓ 'add_visual' (map) success.");

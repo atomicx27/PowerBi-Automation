@@ -539,6 +539,8 @@ function buildVisualJson(visualType, fields, layout) {
     internalVisualType = 'decompositionTreeVisual';
   } else if (visualType === 'keyInfluencers') {
     internalVisualType = 'keyInfluencersVisual';
+  } else if (visualType === 'map' || visualType === 'filledMap') {
+    internalVisualType = 'azureMap';
   }
 
   // Base visual structure
