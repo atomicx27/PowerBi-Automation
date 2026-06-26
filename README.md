@@ -15,7 +15,7 @@ A standalone Node.js MCP server that allows AI coding assistants and client tool
   * `connect_project`: Connects to a local `.Report` folder.
   * `list_pages`: Lists all report pages.
   * `create_page`: Creates a new report page with standard metadata.
-  * `add_visual`: Generates and adds visual containers (supporting column/bar/line/pie/donut/treemap/waterfall/scatter charts, cards, and slicers) using Fabric visual container schemas.
+  * `add_visual`: Generates and adds visual containers (supporting column/bar/line/pie/donut/treemap/waterfall/scatter/area charts, cards, slicers, gauges, KPIs, funnels, ribbons, maps, and combo charts) using Fabric visual container schemas.
   * `delete_visual`: Safe deletion of visuals.
   * `create_table`: Programmatically constructs Table or Pivot Table (Matrix) visuals.
   * `format_visual`: Overrides formatting properties inside `visual.json` (such as titles, labels, borders, legends, and axis settings) using Fabric expression-based single-quoted literals.

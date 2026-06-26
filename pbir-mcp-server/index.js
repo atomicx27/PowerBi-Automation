@@ -657,6 +657,123 @@ function buildVisualJson(visualType, fields, layout) {
         "projections": [getFieldProjection(fields.y || fields.yAxis)]
       };
     }
+  } else if (visualType === 'gauge') {
+    if (fields.value) {
+      visualObj.visual.query.queryState.Values = { "projections": [getFieldProjection(fields.value)] };
+    }
+    if (fields.targetValue) {
+      visualObj.visual.query.queryState.TargetValue = { "projections": [getFieldProjection(fields.targetValue)] };
+    }
+    if (fields.minimum) {
+      visualObj.visual.query.queryState.Minimum = { "projections": [getFieldProjection(fields.minimum)] };
+    }
+    if (fields.maximum) {
+      visualObj.visual.query.queryState.Maximum = { "projections": [getFieldProjection(fields.maximum)] };
+    }
+  } else if (visualType === 'kpi') {
+    if (fields.value) {
+      visualObj.visual.query.queryState.Values = { "projections": [getFieldProjection(fields.value)] };
+    }
+    if (fields.trend) {
+      visualObj.visual.query.queryState.Trend = { "projections": [getFieldProjection(fields.trend)] };
+    }
+    if (fields.targetValue) {
+      visualObj.visual.query.queryState.TargetValue = { "projections": [getFieldProjection(fields.targetValue)] };
+    }
+  } else if (visualType === 'funnel') {
+    if (fields.category) {
+      visualObj.visual.query.queryState.Category = { "projections": [getFieldProjection(fields.category)] };
+    }
+    if (fields.y) {
+      visualObj.visual.query.queryState.Y = { "projections": [getFieldProjection(fields.y)] };
+    }
+  } else if (visualType === 'ribbonChart') {
+    if (fields.category) {
+      visualObj.visual.query.queryState.Category = { "projections": [getFieldProjection(fields.category)] };
+    }
+    if (fields.series) {
+      visualObj.visual.query.queryState.Series = { "projections": [getFieldProjection(fields.series)] };
+    }
+    if (fields.y) {
+      visualObj.visual.query.queryState.Y = { "projections": [getFieldProjection(fields.y)] };
+    }
+  } else if (visualType === 'decompositionTree') {
+    if (fields.analyze) {
+      visualObj.visual.query.queryState.Y = { "projections": [getFieldProjection(fields.analyze)] };
+    }
+    if (fields.explainBy) {
+      visualObj.visual.query.queryState.Category = {
+        "projections": (Array.isArray(fields.explainBy) ? fields.explainBy : [fields.explainBy]).map(e => getFieldProjection(e))
+      };
+    }
+  } else if (visualType === 'keyInfluencers') {
+    if (fields.analyze) {
+      visualObj.visual.query.queryState.Analyze = { "projections": [getFieldProjection(fields.analyze)] };
+    }
+    if (fields.explainBy) {
+      visualObj.visual.query.queryState.ExplainBy = {
+        "projections": (Array.isArray(fields.explainBy) ? fields.explainBy : [fields.explainBy]).map(e => getFieldProjection(e))
+      };
+    }
+  } else if (visualType === 'map') {
+    if (fields.location) {
+      visualObj.visual.query.queryState.Location = { "projections": [getFieldProjection(fields.location)] };
+    }
+    if (fields.latitude) {
+      visualObj.visual.query.queryState.Latitude = { "projections": [getFieldProjection(fields.latitude)] };
+    }
+    if (fields.longitude) {
+      visualObj.visual.query.queryState.Longitude = { "projections": [getFieldProjection(fields.longitude)] };
+    }
+    if (fields.size) {
+      visualObj.visual.query.queryState.Size = { "projections": [getFieldProjection(fields.size)] };
+    }
+    if (fields.legend) {
+      visualObj.visual.query.queryState.Legend = { "projections": [getFieldProjection(fields.legend)] };
+    }
+  } else if (visualType === 'filledMap') {
+    if (fields.location) {
+      visualObj.visual.query.queryState.Location = { "projections": [getFieldProjection(fields.location)] };
+    }
+    if (fields.legend) {
+      visualObj.visual.query.queryState.Legend = { "projections": [getFieldProjection(fields.legend)] };
+    }
+    if (fields.value || fields.values) {
+      visualObj.visual.query.queryState.Values = { "projections": [getFieldProjection(fields.value || fields.values)] };
+    }
+  } else if (visualType === 'lineClusteredColumnComboChart' || visualType === 'lineStackedColumnComboChart') {
+    if (fields.xAxis) {
+      visualObj.visual.query.queryState.Category = {
+        "projections": (Array.isArray(fields.xAxis) ? fields.xAxis : [fields.xAxis]).map(x => getFieldProjection(x))
+      };
+    }
+    if (fields.series) {
+      visualObj.visual.query.queryState.Series = { "projections": [getFieldProjection(fields.series)] };
+    }
+    if (fields.columnValues) {
+      visualObj.visual.query.queryState.Y = {
+        "projections": (Array.isArray(fields.columnValues) ? fields.columnValues : [fields.columnValues]).map(y => getFieldProjection(y))
+      };
+    }
+    if (fields.lineValues) {
+      visualObj.visual.query.queryState.Y2 = {
+        "projections": (Array.isArray(fields.lineValues) ? fields.lineValues : [fields.lineValues]).map(y => getFieldProjection(y))
+      };
+    }
+  } else if (visualType === 'areaChart' || visualType === 'stackedAreaChart') {
+    if (fields.category || fields.xAxis) {
+      visualObj.visual.query.queryState.Category = {
+        "projections": (Array.isArray(fields.category || fields.xAxis) ? (fields.category || fields.xAxis) : [fields.category || fields.xAxis]).map(x => getFieldProjection(x))
+      };
+    }
+    if (fields.series) {
+      visualObj.visual.query.queryState.Series = { "projections": [getFieldProjection(fields.series)] };
+    }
+    if (fields.yAxis || fields.value || fields.y) {
+      visualObj.visual.query.queryState.Y = {
+        "projections": (Array.isArray(fields.yAxis || fields.value || fields.y) ? (fields.yAxis || fields.value || fields.y) : [fields.yAxis || fields.value || fields.y]).map(y => getFieldProjection(y))
+      };
+    }
   }
 
   return { visualName, visualObj };
@@ -1037,7 +1154,7 @@ const tools = {
       const charts = [];
       visuals.forEach(v => {
         const type = v.data.visual ? v.data.visual.visualType : 'group';
-        if (type === 'card' || type === 'slicer') {
+        if (type === 'card' || type === 'slicer' || type === 'kpi' || type === 'gauge') {
           kpis.push(v);
         } else {
           charts.push(v);
@@ -2582,14 +2699,14 @@ rl.on('line', async (line) => {
                     type: "string",
                     description: "The folder/ID name of the page to add the visual to."
                   },
-                  visualType: {
+                   visualType: {
                     type: "string",
-                    enum: ["card", "lineChart", "clusteredColumnChart", "clusteredBarChart", "slicer", "pieChart", "donutChart", "table", "pivotTable", "treemap", "waterfallChart", "scatterChart"],
+                    enum: ["card", "lineChart", "clusteredColumnChart", "clusteredBarChart", "slicer", "pieChart", "donutChart", "table", "pivotTable", "treemap", "waterfallChart", "scatterChart", "gauge", "kpi", "funnel", "ribbonChart", "decompositionTree", "keyInfluencers", "map", "filledMap", "lineClusteredColumnComboChart", "lineStackedColumnComboChart", "areaChart", "stackedAreaChart"],
                     description: "The visual type chart."
                   },
                   fields: {
                     type: "object",
-                    description: "Field bindings. For card: {value: 'table.column'}. For chart: {xAxis: 'table.col', yAxis: ['table.col']}. For slicer: {field: 'table.col', isDropdown: true/false}. For pie/donut: {legend: 'table.col', value: 'table.col'}. For table: {columns: ['table.col']}. For pivotTable: {rows: ['table.col'], columns: ['table.col'], values: ['table.col']}. For treemap: {group: 'table.col', value: 'table.col'}. For waterfallChart: {category: 'table.col', yAxis: 'table.col'}. For scatterChart: {series: 'table.col', xAxis: 'table.col', yAxis: 'table.col'}."
+                    description: "Field bindings. For card/gauge: {value: 'col', targetValue?: 'col', minimum?: 'col', maximum?: 'col'}. For chart/funnel/area: {xAxis/category/field: 'col', yAxis/y: ['col']}. For kpi: {value: 'col', trend: 'col', targetValue: 'col'}. For slicer: {field: 'col', isDropdown: bool}. For pie/donut: {legend: 'col', value: 'col'}. For table: {columns: ['col']}. For pivotTable: {rows: ['col'], columns: ['col'], values: ['col']}. For treemap: {group: 'col', value: 'col'}. For waterfallChart: {category: 'col', yAxis: 'col'}. For scatterChart: {series: 'col', xAxis: 'col', yAxis: 'col'}. For ribbonChart: {category: 'col', series: 'col', y: 'col'}. For decompositionTree/keyInfluencers: {analyze: 'col', explainBy: ['col']}. For map: {location: 'col', latitude?: 'col', longitude?: 'col', size?: 'col', legend?: 'col'}. For filledMap: {location: 'col', legend?: 'col', value: 'col'}. For combo chart: {xAxis: 'col', columnValues: ['col'], lineValues: ['col'], series?: 'col'}."
                   },
                   layout: {
                     type: "object",

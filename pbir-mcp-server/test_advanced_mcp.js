@@ -133,7 +133,7 @@ function runMcpSession() {
       // Check the visualType enum has pieChart, donutChart, table, pivotTable
       const addVisualTool = tools.find(t => t.name === 'add_visual');
       const visualTypeEnum = addVisualTool.inputSchema.properties.visualType.enum;
-      const expectedVisualTypes = ['pieChart', 'donutChart', 'table', 'pivotTable'];
+      const expectedVisualTypes = ['pieChart', 'donutChart', 'table', 'pivotTable', 'gauge', 'kpi', 'funnel', 'ribbonChart', 'decompositionTree', 'keyInfluencers', 'map', 'filledMap', 'lineClusteredColumnComboChart', 'lineStackedColumnComboChart', 'areaChart', 'stackedAreaChart'];
       for (const vt of expectedVisualTypes) {
         assert(visualTypeEnum.includes(vt), `add_visual missing visualType enum: ${vt}`);
       }
@@ -666,6 +666,89 @@ function runMcpSession() {
       const validateResult = JSON.parse(validateResp.result.content[0].text);
       assert(Array.isArray(validateResult.issues));
       console.log("✓ 'validate_report' success.");
+
+      // --- Advanced Visual Type Generation Tests ---
+      console.log("Testing 'add_visual' for gauge...");
+      const gaugeResp = await sendRequest('tools/call', {
+        name: 'add_visual',
+        arguments: {
+          pageId,
+          visualType: "gauge",
+          fields: {
+            value: "financials.Sales",
+            targetValue: "TotalSalesTarget"
+          }
+        }
+      });
+      assert(!gaugeResp.result.isError);
+      const gaugeId = JSON.parse(gaugeResp.result.content[0].text).visualId;
+      const gaugeJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', gaugeId, 'visual.json'), 'utf8'));
+      assert.equal(gaugeJson.visual.visualType, "gauge");
+      assert(gaugeJson.visual.query.queryState.Values);
+      assert(gaugeJson.visual.query.queryState.TargetValue);
+      console.log("✓ 'add_visual' (gauge) success.");
+
+      console.log("Testing 'add_visual' for decompositionTree...");
+      const dtResp = await sendRequest('tools/call', {
+        name: 'add_visual',
+        arguments: {
+          pageId,
+          visualType: "decompositionTree",
+          fields: {
+            analyze: "financials.Sales",
+            explainBy: ["financials.Country", "financials.Segment"]
+          }
+        }
+      });
+      assert(!dtResp.result.isError);
+      const dtId = JSON.parse(dtResp.result.content[0].text).visualId;
+      const dtJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', dtId, 'visual.json'), 'utf8'));
+      assert.equal(dtJson.visual.visualType, "decompositionTree");
+      assert(dtJson.visual.query.queryState.Y);
+      assert.equal(dtJson.visual.query.queryState.Category.projections.length, 2);
+      console.log("✓ 'add_visual' (decompositionTree) success.");
+
+      console.log("Testing 'add_visual' for map...");
+      const mapResp = await sendRequest('tools/call', {
+        name: 'add_visual',
+        arguments: {
+          pageId,
+          visualType: "map",
+          fields: {
+            location: "financials.Country",
+            size: "financials.Sales"
+          }
+        }
+      });
+      assert(!mapResp.result.isError);
+      const mapId = JSON.parse(mapResp.result.content[0].text).visualId;
+      const mapJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', mapId, 'visual.json'), 'utf8'));
+      assert.equal(mapJson.visual.visualType, "map");
+      assert(mapJson.visual.query.queryState.Location);
+      assert(mapJson.visual.query.queryState.Size);
+      console.log("✓ 'add_visual' (map) success.");
+
+      console.log("Testing 'add_visual' for lineClusteredColumnComboChart...");
+      const comboResp = await sendRequest('tools/call', {
+        name: 'add_visual',
+        arguments: {
+          pageId,
+          visualType: "lineClusteredColumnComboChart",
+          fields: {
+            xAxis: "financials.Date",
+            columnValues: ["financials.Sales"],
+            lineValues: ["financials.Profit"]
+          }
+        }
+      });
+      assert(!comboResp.result.isError);
+      const comboId = JSON.parse(comboResp.result.content[0].text).visualId;
+      const comboJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', comboId, 'visual.json'), 'utf8'));
+      assert.equal(comboJson.visual.visualType, "lineClusteredColumnComboChart");
+      assert(comboJson.visual.query.queryState.Category);
+      assert(comboJson.visual.query.queryState.Y);
+      assert(comboJson.visual.query.queryState.Y2);
+      console.log("✓ 'add_visual' (combo chart) success.");
 
       // 14. Delete Visual
       console.log("Testing 'delete_visual'...");
