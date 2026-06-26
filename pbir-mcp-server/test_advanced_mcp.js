@@ -4,12 +4,18 @@ const path = require('path');
 const assert = require('assert').strict;
 
 const tempReportPath = path.join(__dirname, 'temp_test_report.Report');
+const tempModelPath = path.join(__dirname, 'temp_test_report.SemanticModel');
 
 // Helper to setup mock PBIR folder
 function setupMockReport() {
   if (fs.existsSync(tempReportPath)) {
     fs.rmSync(tempReportPath, { recursive: true, force: true });
   }
+  if (fs.existsSync(tempModelPath)) {
+    fs.rmSync(tempModelPath, { recursive: true, force: true });
+  }
+
+  // Create report folder
   fs.mkdirSync(tempReportPath, { recursive: true });
   fs.writeFileSync(path.join(tempReportPath, 'definition.pbir'), JSON.stringify({
     "version": "1.0",
@@ -20,12 +26,27 @@ function setupMockReport() {
 
   const defDir = path.join(tempReportPath, 'definition');
   fs.mkdirSync(defDir, { recursive: true });
+  fs.writeFileSync(path.join(defDir, 'report.json'), JSON.stringify({
+    "config": {}
+  }, null, 2));
+
+  // Create semantic model folder
+  const modelDefDir = path.join(tempModelPath, 'definition');
+  const modelTablesDir = path.join(modelDefDir, 'tables');
+  fs.mkdirSync(modelTablesDir, { recursive: true });
+
+  fs.writeFileSync(path.join(modelDefDir, 'model.tmdl'), `model ModelName\n\nref table financials\n\nref cultureInfo en-US\n`);
+  fs.writeFileSync(path.join(modelDefDir, 'relationships.tmdl'), ``);
+  fs.writeFileSync(path.join(modelTablesDir, 'financials.tmdl'), `table financials\n\tlineageTag: tag-financials\n\n\tcolumn Date\n\t\tdataType: dateTime\n\n\tmeasure Sales = SUM(financials[Gross Sales])\n\n\tpartition financials = mxt\n\t\tsource = ...\n`);
 }
 
 // Clean up helper
 function cleanupMockReport() {
   if (fs.existsSync(tempReportPath)) {
     fs.rmSync(tempReportPath, { recursive: true, force: true });
+  }
+  if (fs.existsSync(tempModelPath)) {
+    fs.rmSync(tempModelPath, { recursive: true, force: true });
   }
 }
 
@@ -96,7 +117,12 @@ function runMcpSession() {
       const expectedTools = [
         'connect_project', 'list_pages', 'create_page', 'add_visual', 
         'delete_visual', 'create_table', 'format_visual', 
-        'auto_arrange_page', 'add_action_button', 'group_visuals', 'sync_slicers'
+        'auto_arrange_page', 'add_action_button', 'group_visuals', 'sync_slicers',
+        'apply_theme', 'audit_layout', 'create_date_table', 'create_calculated_column',
+        'validate_measures', 'create_kpi', 'clone_page', 'duplicate_visual',
+        'set_conditional_formatting', 'add_bookmark', 'export_page_summary',
+        'set_page_background', 'manage_filters', 'set_visual_interactions',
+        'add_tooltip_page', 'snapshot_report', 'diff_reports', 'validate_report'
       ];
       
       for (const tName of expectedTools) {
@@ -388,6 +414,258 @@ function runMcpSession() {
       assert.equal(arrPieJson3.position.y, 30);
       assert.equal(arrPieJson3.position.height, 200);
       console.log("✓ 'auto_arrange_page' (alignTop) positions correct.");
+      // --- Phase 1: Modeling & DAX Foundation Tests ---
+      console.log("Testing 'create_date_table'...");
+      const dateTableResp = await sendRequest('tools/call', {
+        name: 'create_date_table',
+        arguments: {
+          tableName: "DateTable",
+          startDate: "2013-01-01",
+          endDate: "2014-12-31",
+          fiscalYearStartMonth: 4,
+          relationshipColumn: "financials.Date"
+        }
+      });
+      assert(!dateTableResp.result.isError);
+      assert(fs.existsSync(path.join(tempModelPath, 'definition', 'tables', 'DateTable.tmdl')), "DateTable.tmdl should exist");
+      const dateTableContent = fs.readFileSync(path.join(tempModelPath, 'definition', 'tables', 'DateTable.tmdl'), 'utf8');
+      assert(dateTableContent.includes('FiscalYear = IF(MONTH([Date]) >= 4'));
+      console.log("✓ 'create_date_table' success.");
+
+      console.log("Testing 'create_calculated_column'...");
+      const calcColResp = await sendRequest('tools/call', {
+        name: 'create_calculated_column',
+        arguments: {
+          tableName: "financials",
+          columns: [
+            {
+              name: "Profit Tier",
+              expression: 'SWITCH(TRUE(), financials[Profit] > 10000, "High", "Low")',
+              dataType: "string"
+            }
+          ]
+        }
+      });
+      assert(!calcColResp.result.isError);
+      const financialsContent = fs.readFileSync(path.join(tempModelPath, 'definition', 'tables', 'financials.tmdl'), 'utf8');
+      assert(financialsContent.includes("column 'Profit Tier' = SWITCH("));
+      console.log("✓ 'create_calculated_column' success.");
+
+      console.log("Testing 'validate_measures' offline error handling...");
+      const valMeasuresResp = await sendRequest('tools/call', {
+        name: 'validate_measures',
+        arguments: { mode: "syntax" }
+      });
+      assert(valMeasuresResp.result.isError);
+      assert(valMeasuresResp.result.content[0].text.includes("Could not find any active msmdsrv.exe listening ports"));
+      console.log("✓ 'validate_measures' offline check correct.");
+
+      console.log("Testing 'create_kpi'...");
+      const kpiResp = await sendRequest('tools/call', {
+        name: 'create_kpi',
+        arguments: {
+          tableName: "financials",
+          measureName: "Sales",
+          targetValue: "TotalSalesTarget",
+          statusThresholds: {
+            good: 100,
+            warning: 80
+          }
+        }
+      });
+      assert(!kpiResp.result.isError);
+      const financialsKpiContent = fs.readFileSync(path.join(tempModelPath, 'definition', 'tables', 'financials.tmdl'), 'utf8');
+      assert(financialsKpiContent.includes("kpi"));
+      assert(financialsKpiContent.includes("target = [TotalSalesTarget]"));
+      console.log("✓ 'create_kpi' success.");
+
+      // --- Phase 2: High-Impact Productivity Tests ---
+      console.log("Testing 'clone_page'...");
+      const cloneResp = await sendRequest('tools/call', {
+        name: 'clone_page',
+        arguments: {
+          sourcePageId: pageId,
+          newPageName: "Sales YoY Cloned"
+        }
+      });
+      assert(!cloneResp.result.isError);
+      const cloneResult = JSON.parse(cloneResp.result.content[0].text);
+      const newPageId = cloneResult.newPageId;
+      assert(newPageId);
+      assert(fs.existsSync(path.join(tempReportPath, 'definition', 'pages', newPageId, 'page.json')));
+      console.log("✓ 'clone_page' success.");
+
+      console.log("Testing 'duplicate_visual'...");
+      const dupVisualResp = await sendRequest('tools/call', {
+        name: 'duplicate_visual',
+        arguments: {
+          sourcePageId: pageId,
+          sourceVisualId: pieVisualId,
+          offsetX: 50,
+          offsetY: 50
+        }
+      });
+      assert(!dupVisualResp.result.isError);
+      const dupVisualResult = JSON.parse(dupVisualResp.result.content[0].text);
+      const duplicatedVisualId = dupVisualResult.newVisualId;
+      assert(duplicatedVisualId);
+      assert(fs.existsSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', duplicatedVisualId, 'visual.json')));
+      console.log("✓ 'duplicate_visual' success.");
+
+      console.log("Testing 'set_conditional_formatting' (colorScale)...");
+      const condFmtResp = await sendRequest('tools/call', {
+        name: 'set_conditional_formatting',
+        arguments: {
+          pageId,
+          visualId: pieVisualId,
+          rules: {
+            type: "colorScale",
+            field: "financials.Profit",
+            minColor: "#FF0000",
+            maxColor: "#00FF00"
+          }
+        }
+      });
+      assert(!condFmtResp.result.isError);
+      const pieVisualJson = JSON.parse(fs.readFileSync(pieJsonPath, 'utf8'));
+      assert(pieVisualJson.visual.objects.dataPoint[0].properties.fill.colorScale);
+      console.log("✓ 'set_conditional_formatting' success.");
+
+      console.log("Testing 'add_bookmark'...");
+      const bookmarkResp = await sendRequest('tools/call', {
+        name: 'add_bookmark',
+        arguments: {
+          bookmarkName: "All Countries View",
+          pageId
+        }
+      });
+      assert(!bookmarkResp.result.isError);
+      const bookmarkResult = JSON.parse(bookmarkResp.result.content[0].text);
+      assert(bookmarkResult.bookmarkId);
+      assert(fs.existsSync(path.join(tempReportPath, 'definition', 'bookmarks', `${bookmarkResult.bookmarkId}.bookmark.json`)));
+      console.log("✓ 'add_bookmark' success.");
+
+      console.log("Testing 'export_page_summary'...");
+      const summaryResp = await sendRequest('tools/call', {
+        name: 'export_page_summary',
+        arguments: {
+          pageId,
+          format: "markdown"
+        }
+      });
+      assert(!summaryResp.result.isError);
+      const summaryResult = JSON.parse(summaryResp.result.content[0].text);
+      assert(summaryResult.markdown);
+      assert(summaryResult.markdown.includes("Page Summary:"));
+      console.log("✓ 'export_page_summary' success.");
+
+      // --- Phase 3: Layout & UX Intelligence Tests ---
+      console.log("Testing 'set_page_background'...");
+      const bgResp = await sendRequest('tools/call', {
+        name: 'set_page_background',
+        arguments: {
+          pageId,
+          type: "solid",
+          color: "#E5E5E5",
+          transparency: 10
+        }
+      });
+      assert(!bgResp.result.isError);
+      const updatedPageJson = JSON.parse(fs.readFileSync(pageJsonPath, 'utf8'));
+      assert(updatedPageJson.objects.background[0].properties.color);
+      console.log("✓ 'set_page_background' success.");
+
+      console.log("Testing 'manage_filters' (add report filter)...");
+      const filterResp = await sendRequest('tools/call', {
+        name: 'manage_filters',
+        arguments: {
+          scope: "report",
+          operation: "add",
+          filter: {
+            field: "financials.Country",
+            operator: "eq",
+            values: ["USA", "Canada"]
+          }
+        }
+      });
+      assert(!filterResp.result.isError);
+      const reportJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'report.json'), 'utf8'));
+      assert(reportJson.filterConfig.filters.length > 0);
+      console.log("✓ 'manage_filters' success.");
+
+      console.log("Testing 'set_visual_interactions'...");
+      const interactionResp = await sendRequest('tools/call', {
+        name: 'set_visual_interactions',
+        arguments: {
+          pageId,
+          sourceVisualId: pieVisualId,
+          interactions: [
+            {
+              targetVisualId: slicerVisualId,
+              type: "none"
+            }
+          ]
+        }
+      });
+      assert(!interactionResp.result.isError);
+      const updatedPageJson2 = JSON.parse(fs.readFileSync(pageJsonPath, 'utf8'));
+      assert.equal(updatedPageJson2.visualInteractions[0].source, pieVisualId);
+      assert.equal(updatedPageJson2.visualInteractions[0].type, "NoFilter");
+      console.log("✓ 'set_visual_interactions' success.");
+
+      console.log("Testing 'add_tooltip_page'...");
+      const tooltipResp = await sendRequest('tools/call', {
+        name: 'add_tooltip_page',
+        arguments: {
+          pageName: "Custom Hover Tooltip",
+          width: 300,
+          height: 200
+        }
+      });
+      assert(!tooltipResp.result.isError);
+      const tooltipResult = JSON.parse(tooltipResp.result.content[0].text);
+      assert(tooltipResult.pageId);
+      assert(fs.existsSync(path.join(tempReportPath, 'definition', 'pages', tooltipResult.pageId, 'page.json')));
+      console.log("✓ 'add_tooltip_page' success.");
+
+      // --- Phase 4: DevOps & Governance Tests ---
+      console.log("Testing 'snapshot_report'...");
+      const snapshotResp = await sendRequest('tools/call', {
+        name: 'snapshot_report',
+        arguments: {
+          label: "before-deletion"
+        }
+      });
+      assert(!snapshotResp.result.isError);
+      const snapshotResult = JSON.parse(snapshotResp.result.content[0].text);
+      assert(snapshotResult.snapshotPath);
+      assert(fs.existsSync(path.join(snapshotResult.snapshotPath, 'manifest.json')));
+      console.log("✓ 'snapshot_report' success.");
+
+      console.log("Testing 'diff_reports'...");
+      const diffResp = await sendRequest('tools/call', {
+        name: 'diff_reports',
+        arguments: {
+          sourcePath: snapshotResult.snapshotPath,
+          format: "json"
+        }
+      });
+      assert(!diffResp.result.isError);
+      const diffResult = JSON.parse(diffResp.result.content[0].text);
+      assert(diffResult.pages);
+      console.log("✓ 'diff_reports' success.");
+
+      console.log("Testing 'validate_report'...");
+      const validateResp = await sendRequest('tools/call', {
+        name: 'validate_report',
+        arguments: {
+          fix: true
+        }
+      });
+      assert(!validateResp.result.isError);
+      const validateResult = JSON.parse(validateResp.result.content[0].text);
+      assert(Array.isArray(validateResult.issues));
+      console.log("✓ 'validate_report' success.");
 
       // 14. Delete Visual
       console.log("Testing 'delete_visual'...");

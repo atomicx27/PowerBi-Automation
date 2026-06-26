@@ -11,7 +11,7 @@ A standalone Node.js MCP server that allows AI coding assistants and client tool
 * **Visual Projections & Drilldowns:** Supports advanced visual query projections (projections list mappings for metrics vs dimensions). Enables **hierarchical axis mappings** (arrays in axes) for native **drilldown/drillup** visual interactions.
 * **Layout Collision Fixer (`audit_layout`):** Automatically audits page layout bounding boxes, identifies overlapping elements, and auto-shifts overlaps down recursively to maintain clean alignments.
 * **Dynamic Theme Registry (`apply_theme`):** Registers custom user-defined color themes in `report.json` and copies asset resources dynamically to ensure Power BI Desktop reloads them from disk.
-* **Exposed Tools:**
+* **Exposed Core Layout Tools:**
   * `connect_project`: Connects to a local `.Report` folder.
   * `list_pages`: Lists all report pages.
   * `create_page`: Creates a new report page with standard metadata.
@@ -23,6 +23,30 @@ A standalone Node.js MCP server that allows AI coding assistants and client tool
   * `add_action_button`: Adds interactive navigation or filter buttons.
   * `group_visuals`: Bundles multiple visuals together under a visual group container.
   * `sync_slicers`: Configures sync slicer options to enable cross-page filter sharing.
+  * `apply_theme`: Registers a custom color palette theme in `report.json`.
+  * `audit_layout`: Scans and auto-resolves visual overlaps.
+
+* **Exposed Advanced Modeling & DevOps Tools (MCP Server v2 Upgrades):**
+  * **Phase 1: Modeling & DAX Foundation**
+    * `create_date_table`: Generates a proper Date dimension table as a DAX calculated table supporting custom fiscal years.
+    * `create_calculated_column`: Adds DAX calculated columns to an existing table's TMDL definition.
+    * `validate_measures`: Health-checks all measures in the connected semantic model (syntax or execution depth).
+    * `create_kpi`: Defines KPI objects with targets, status thresholds, and trend references.
+  * **Phase 2: High-Impact Productivity**
+    * `clone_page`: Duplicates an entire page with all visuals and coordinates within the same project.
+    * `duplicate_visual`: Clones a visual to the same or different page with offsets.
+    * `set_conditional_formatting`: Applies data-driven color or icon rules to visuals.
+    * `add_bookmark`: Creates report bookmarks for storytelling or state capture.
+    * `export_page_summary`: Generates a structured JSON/Markdown manifest of page elements.
+  * **Phase 3: Layout & UX Intelligence**
+    * `set_page_background`: Configures solid color or image wallpaper backgrounds.
+    * `manage_filters`: Programmatically adds, removes, or clears filters at visual, page, or report level.
+    * `set_visual_interactions`: Controls cross-filtering and cross-highlighting behavior between visuals.
+    * `add_tooltip_page`: Creates a custom tooltip page that appears on hover.
+  * **Phase 4: DevOps & Governance**
+    * `snapshot_report`: Creates a timestamped backup of the entire report folder.
+    * `diff_reports`: Compares two report folders or a report against a snapshot and produces a structured diff.
+    * `validate_report`: Lints the entire report structure for consistency and correctness.
 
 ### 2. Time Intelligence DAX Modeling
 Adds robust, aggregated time intelligence DAX calculations to tabular definition TMDL files on disk and synchronizes active Analysis Services sessions in-memory:
@@ -153,6 +177,57 @@ Registers a custom theme and copies assets dynamically:
     }
   },
   "id": 4
+}
+```
+
+### 5. Generate Date Table with Fiscal Year
+Generates a calculated date table with relationships in TMDL:
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "create_date_table",
+    "arguments": {
+      "tableName": "DateTable",
+      "startDate": "2013-01-01",
+      "endDate": "2014-12-31",
+      "fiscalYearStartMonth": 4,
+      "relationshipColumn": "financials.Date"
+    }
+  },
+  "id": 5
+}
+```
+
+### 6. Snapshot & Diff Reports
+DevOps capabilities to backup report changes and compare them:
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "snapshot_report",
+    "arguments": {
+      "label": "before-theme-change"
+    }
+  },
+  "id": 6
+}
+```
+And then compare the active report to that snapshot:
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "diff_reports",
+    "arguments": {
+      "sourcePath": "C:\\Users\\GTXS3893\\OneDrive - orange.com\\Bureau\\sales.Report\\.snapshots\\snapshot_2026-06-26T08-44-24-591Z_before-theme-change",
+      "format": "markdown"
+    }
+  },
+  "id": 7
 }
 ```
 
