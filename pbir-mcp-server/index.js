@@ -530,6 +530,17 @@ function getFieldProjection(queryRef) {
 function buildVisualJson(visualType, fields, layout) {
   const visualName = `Visual_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
   
+  let internalVisualType = visualType;
+  if (visualType === 'stackedColumnChart') {
+    internalVisualType = 'columnChart';
+  } else if (visualType === 'stackedBarChart') {
+    internalVisualType = 'barChart';
+  } else if (visualType === 'decompositionTree') {
+    internalVisualType = 'decompositionTreeVisual';
+  } else if (visualType === 'keyInfluencers') {
+    internalVisualType = 'keyInfluencersVisual';
+  }
+
   // Base visual structure
   const visualObj = {
     "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.1.0/schema.json",
@@ -541,7 +552,7 @@ function buildVisualJson(visualType, fields, layout) {
       "height": layout.height || 250
     },
     "visual": {
-      "visualType": visualType,
+      "visualType": internalVisualType,
       "query": {
         "queryState": {}
       }
@@ -826,21 +837,42 @@ function buildVisualJson(visualType, fields, layout) {
   } else if (visualType === 'image') {
     delete visualObj.visual.query;
     if (fields.url) {
-      visualObj.visual.objects = {
-        "general": [
-          {
-            "properties": {
-              "imageUrl": {
-                "expr": {
-                  "Literal": {
-                    "Value": `'${fields.url}'`
+      const isLocal = !fields.url.startsWith('http://') && !fields.url.startsWith('https://');
+      if (isLocal) {
+        const filename = fields.url.split('/').pop();
+        visualObj.visual.objects = {
+          "general": [
+            {
+              "properties": {
+                "imageUrl": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "ItemName": filename
+                    }
                   }
                 }
               }
             }
-          }
-        ]
-      };
+          ]
+        };
+      } else {
+        visualObj.visual.objects = {
+          "general": [
+            {
+              "properties": {
+                "imageUrl": {
+                  "expr": {
+                    "Literal": {
+                      "Value": `'${fields.url}'`
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        };
+      }
     }
   }
 

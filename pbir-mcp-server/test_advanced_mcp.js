@@ -703,7 +703,7 @@ function runMcpSession() {
       assert(!dtResp.result.isError);
       const dtId = JSON.parse(dtResp.result.content[0].text).visualId;
       const dtJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', dtId, 'visual.json'), 'utf8'));
-      assert.equal(dtJson.visual.visualType, "decompositionTree");
+      assert.equal(dtJson.visual.visualType, "decompositionTreeVisual");
       assert(dtJson.visual.query.queryState.Y);
       assert.equal(dtJson.visual.query.queryState.Category.projections.length, 2);
       console.log("✓ 'add_visual' (decompositionTree) success.");
@@ -767,7 +767,7 @@ function runMcpSession() {
       assert(!stackedResp.result.isError);
       const stackedId = JSON.parse(stackedResp.result.content[0].text).visualId;
       const stackedJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', stackedId, 'visual.json'), 'utf8'));
-      assert.equal(stackedJson.visual.visualType, "stackedColumnChart");
+      assert.equal(stackedJson.visual.visualType, "columnChart");
       assert(stackedJson.visual.query.queryState.Category);
       assert(stackedJson.visual.query.queryState.Series);
       assert(stackedJson.visual.query.queryState.Y);
@@ -825,7 +825,7 @@ function runMcpSession() {
       const imageId = JSON.parse(imageResp.result.content[0].text).visualId;
       const imageJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', imageId, 'visual.json'), 'utf8'));
       assert.equal(imageJson.visual.visualType, "image");
-      assert.equal(imageJson.visual.objects.general[0].properties.imageUrl.expr.Literal.Value, "'StaticResources/RegisteredResources/logo.png'");
+      assert.equal(imageJson.visual.objects.general[0].properties.imageUrl.expr.ResourcePackageItem.ItemName, "logo.png");
       assert(!imageJson.visual.query, "image should not have a query block");
       console.log("✓ 'add_visual' (image) success.");
 
