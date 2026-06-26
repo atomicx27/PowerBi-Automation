@@ -170,7 +170,7 @@ function runMcpSession() {
       const pieJson = JSON.parse(fs.readFileSync(pieJsonPath, 'utf8'));
       assert.equal(pieJson.$schema, "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.1.0/schema.json");
       assert.equal(pieJson.visual.visualType, "pieChart");
-      assert(pieJson.visual.query.queryState.Legend);
+       assert(pieJson.visual.query.queryState.Category);
       assert(pieJson.visual.query.queryState.Y);
       console.log("✓ Checked pie visual.json content.");
 
@@ -296,6 +296,7 @@ function runMcpSession() {
       assert.equal(btnJson.visual.visualType, "actionButton");
       assert.equal(btnJson.visual.objects.action[0].properties.type.expr.Literal.Value, "'PageNavigation'");
       assert.equal(btnJson.visual.objects.action[0].properties.page.expr.Literal.Value, "'DetailPage_123'");
+      assert.equal(btnJson.visual.objects.text[0].properties.show.expr.Literal.Value, "true");
       console.log("✓ Checked action button properties.");
 
       // 9. Sync Slicers

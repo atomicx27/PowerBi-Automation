@@ -669,6 +669,7 @@ const tools = {
           "text": [
             {
               "properties": {
+                "show": { "expr": { "Literal": { "Value": "true" } } },
                 "text": { "expr": { "Literal": { "Value": `'${label || (buttonType === 'pageNavigation' ? 'Go to Page' : 'Clear Filters')}'` } } }
               }
             }
