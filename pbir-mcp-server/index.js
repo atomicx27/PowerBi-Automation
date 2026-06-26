@@ -111,9 +111,7 @@ function buildVisualJson(visualType, fields, layout) {
     };
   } else if (visualType === 'lineChart' || visualType === 'clusteredColumnChart' || visualType === 'clusteredBarChart') {
     visualObj.visual.query.queryState.Category = {
-      "projections": [
-        getFieldProjection(fields.xAxis)
-      ]
+      "projections": (Array.isArray(fields.xAxis) ? fields.xAxis : [fields.xAxis]).map(x => getFieldProjection(x))
     };
     visualObj.visual.query.queryState.Y = {
       "projections": (Array.isArray(fields.yAxis) ? fields.yAxis : [fields.yAxis]).map(y => getFieldProjection(y))
@@ -175,7 +173,7 @@ function buildVisualJson(visualType, fields, layout) {
     const groupField = fields.group || fields.category;
     if (groupField) {
       visualObj.visual.query.queryState.Group = {
-        "projections": [getFieldProjection(groupField)]
+        "projections": (Array.isArray(groupField) ? groupField : [groupField]).map(g => getFieldProjection(g))
       };
     }
     const valueField = fields.value || fields.values;
@@ -188,7 +186,7 @@ function buildVisualJson(visualType, fields, layout) {
     const categoryField = fields.category || fields.xAxis;
     if (categoryField) {
       visualObj.visual.query.queryState.Category = {
-        "projections": [getFieldProjection(categoryField)]
+        "projections": (Array.isArray(categoryField) ? categoryField : [categoryField]).map(c => getFieldProjection(c))
       };
     }
     const yField = fields.yAxis || fields.y || fields.value;
