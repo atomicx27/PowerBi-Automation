@@ -46,7 +46,7 @@ function findReportInWorkspace(dir) {
   return null;
 }
 
-const knownMeasures = ['Total Sales', 'Sales YoY Growth', 'Total Profit', 'Profit Margin', 'Profit YoY Growth'];
+const knownMeasures = ['Total Sales', 'Sales YoY Growth', 'Total Profit', 'Profit Margin', 'Profit YoY Growth', 'Average Units Sold', 'Total COGS'];
 function getFieldProjection(queryRef) {
   const parts = queryRef.split('.');
   const entity = parts[0];
@@ -669,7 +669,14 @@ const tools = {
           "text": [
             {
               "properties": {
-                "show": { "expr": { "Literal": { "Value": "true" } } },
+                "show": { "expr": { "Literal": { "Value": "true" } } }
+              }
+            },
+            {
+              "selector": {
+                "id": "default"
+              },
+              "properties": {
                 "text": { "expr": { "Literal": { "Value": `'${label || (buttonType === 'pageNavigation' ? 'Go to Page' : 'Clear Filters')}'` } } }
               }
             }
