@@ -575,28 +575,54 @@ function buildVisualJson(visualType, fields, layout) {
     visualObj.visual.query.queryState.Y = {
       "projections": (Array.isArray(fields.yAxis) ? fields.yAxis : [fields.yAxis]).map(y => getFieldProjection(y))
     };
-  } else if (visualType === 'slicer') {
+  } else if (visualType === 'slicer' || visualType === 'advancedSlicerVisual') {
     visualObj.visual.query.queryState.Values = {
       "projections": [
         getFieldProjection(fields.field)
       ]
     };
-    // Set visual type specific format if dropdown requested
-    visualObj.visual.objects = {
-      "slicerSettings": [
-        {
-          "properties": {
-            "slicerType": {
-              "expr": {
-                "Literal": {
-                  "Value": fields.isDropdown ? "'Dropdown'" : "'List'"
+    if (visualType === 'slicer') {
+      // Set visual type specific format if dropdown requested
+      visualObj.visual.objects = {
+        "slicerSettings": [
+          {
+            "properties": {
+              "slicerType": {
+                "expr": {
+                  "Literal": {
+                    "Value": fields.isDropdown ? "'Dropdown'" : "'List'"
+                  }
                 }
               }
             }
           }
-        }
-      ]
-    };
+        ]
+      };
+    } else {
+      // advancedSlicerVisual layout auto-sensing
+      const w = layout.width || 300;
+      const h = layout.height || 250;
+      const computedRows = fields.rows || (w > h ? 1 : 4);
+      const computedCols = fields.columns || (w > h ? 4 : 1);
+      visualObj.visual.objects = {
+        "layout": [
+          {
+            "properties": {
+              "rows": { "expr": { "Literal": { "Value": String(computedRows) } } },
+              "columns": { "expr": { "Literal": { "Value": String(computedCols) } } }
+            }
+          }
+        ],
+        "shape": [
+          {
+            "properties": {
+              "tileShape": { "expr": { "Literal": { "Value": "'rectangleRounded'" } } },
+              "rectangleRoundedCurve": { "expr": { "Literal": { "Value": "10" } } }
+            }
+          }
+        ]
+      };
+    }
   } else if (visualType === 'pieChart' || visualType === 'donutChart') {
     visualObj.visual.query.queryState.Category = {
       "projections": [
@@ -819,6 +845,13 @@ function buildVisualJson(visualType, fields, layout) {
     visualObj.visual.query.queryState.Values = {
       "projections": (Array.isArray(fields.values) ? fields.values : (fields.value ? [fields.value] : [])).map(v => getFieldProjection(v))
     };
+  } else if (visualType === 'cardVisual') {
+    if (fields.values || fields.value) {
+      const vals = Array.isArray(fields.values || fields.value) ? (fields.values || fields.value) : [fields.values || fields.value];
+      visualObj.visual.query.queryState.Data = {
+        "projections": vals.map(v => getFieldProjection(v))
+      };
+    }
   } else if (visualType === 'basicShape') {
     delete visualObj.visual.query;
     visualObj.visual.objects = {
@@ -887,6 +920,126 @@ function applyVisualFormatting(visualObj, formatArgs) {
   }
   
   const objects = visualObj.visual.objects;
+
+  // Apply preset formatting first if specified
+  if (formatArgs.preset) {
+    const preset = formatArgs.preset;
+    if (preset === 'glassmorphism') {
+      objects.background = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "transparency": { "expr": { "Literal": { "Value": "60" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } }
+        }
+      }];
+      objects.border = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#E0E0E0'" } } } } }
+        }
+      }];
+      objects.title = [{
+        "properties": {
+          "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#333333'" } } } } }
+        }
+      }];
+    } else if (preset === 'darkMinimal') {
+      objects.background = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "transparency": { "expr": { "Literal": { "Value": "0" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#1E1E24'" } } } } }
+        }
+      }];
+      objects.border = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "false" } } }
+        }
+      }];
+      objects.title = [{
+        "properties": {
+          "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } }
+        }
+      }];
+      objects.labels = [{
+        "properties": {
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#D61A3C'" } } } } }
+        }
+      }];
+    } else if (preset === 'neonGradient') {
+      objects.background = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "transparency": { "expr": { "Literal": { "Value": "0" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#0A0A0C'" } } } } }
+        }
+      }];
+      objects.border = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#39FF14'" } } } } }
+        }
+      }];
+      objects.title = [{
+        "properties": {
+          "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#00FFFF'" } } } } }
+        }
+      }];
+      objects.labels = [{
+        "properties": {
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FF00FF'" } } } } }
+        }
+      }];
+    } else if (preset === 'orangeBrand') {
+      objects.background = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "transparency": { "expr": { "Literal": { "Value": "0" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } }
+        }
+      }];
+      objects.border = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FF7900'" } } } } }
+        }
+      }];
+      objects.title = [{
+        "properties": {
+          "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#000000'" } } } } }
+        }
+      }];
+      objects.labels = [{
+        "properties": {
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FF7900'" } } } } }
+        }
+      }];
+    } else if (preset === 'redCorporate') {
+      objects.background = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "transparency": { "expr": { "Literal": { "Value": "0" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#FFFFFF'" } } } } }
+        }
+      }];
+      objects.border = [{
+        "properties": {
+          "show": { "expr": { "Literal": { "Value": "true" } } },
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#D61A3C'" } } } } }
+        }
+      }];
+      objects.title = [{
+        "properties": {
+          "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#333333'" } } } } }
+        }
+      }];
+      objects.labels = [{
+        "properties": {
+          "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#D61A3C'" } } } } }
+        }
+      }];
+    }
+  }
   
   if (formatArgs.title) {
     const titleProps = {};
@@ -902,7 +1055,10 @@ function applyVisualFormatting(visualObj, formatArgs) {
     if (formatArgs.title.fontColor !== undefined) {
       titleProps.fontColor = { "solid": { "color": { "expr": { "Literal": { "Value": `'${formatArgs.title.fontColor}'` } } } } };
     }
-    objects.title = [{ "properties": titleProps }];
+    if (!objects.title) {
+      objects.title = [{ "properties": {} }];
+    }
+    Object.assign(objects.title[0].properties, titleProps);
   }
 
   if (formatArgs.dataLabels) {
@@ -919,7 +1075,10 @@ function applyVisualFormatting(visualObj, formatArgs) {
     if (formatArgs.dataLabels.labelStyle !== undefined) {
       labelProps.labelStyle = { "expr": { "Literal": { "Value": `'${formatArgs.dataLabels.labelStyle}'` } } };
     }
-    objects.labels = [{ "properties": labelProps }];
+    if (!objects.labels) {
+      objects.labels = [{ "properties": {} }];
+    }
+    Object.assign(objects.labels[0].properties, labelProps);
   }
 
   if (formatArgs.containerStyle) {
@@ -931,9 +1090,12 @@ function applyVisualFormatting(visualObj, formatArgs) {
       if (formatArgs.containerStyle.borderColor !== undefined) {
         borderProps.color = { "solid": { "color": { "expr": { "Literal": { "Value": `'${formatArgs.containerStyle.borderColor}'` } } } } };
       }
-      objects.border = [{ "properties": borderProps }];
+      if (!objects.border) {
+        objects.border = [{ "properties": {} }];
+      }
+      Object.assign(objects.border[0].properties, borderProps);
     }
-    if (formatArgs.containerStyle.backgroundShow !== undefined || formatArgs.containerStyle.backgroundTransparency !== undefined) {
+    if (formatArgs.containerStyle.backgroundShow !== undefined || formatArgs.containerStyle.backgroundTransparency !== undefined || formatArgs.containerStyle.backgroundColor !== undefined) {
       const bgProps = {};
       if (formatArgs.containerStyle.backgroundShow !== undefined) {
         bgProps.show = { "expr": { "Literal": { "Value": `${formatArgs.containerStyle.backgroundShow}` } } };
@@ -941,7 +1103,13 @@ function applyVisualFormatting(visualObj, formatArgs) {
       if (formatArgs.containerStyle.backgroundTransparency !== undefined) {
         bgProps.transparency = { "expr": { "Literal": { "Value": `${formatArgs.containerStyle.backgroundTransparency}` } } };
       }
-      objects.background = [{ "properties": bgProps }];
+      if (formatArgs.containerStyle.backgroundColor !== undefined) {
+        bgProps.color = { "solid": { "color": { "expr": { "Literal": { "Value": `'${formatArgs.containerStyle.backgroundColor}'` } } } } };
+      }
+      if (!objects.background) {
+        objects.background = [{ "properties": {} }];
+      }
+      Object.assign(objects.background[0].properties, bgProps);
     }
   }
 
@@ -953,7 +1121,10 @@ function applyVisualFormatting(visualObj, formatArgs) {
     if (formatArgs.legend.position !== undefined) {
       legendProps.position = { "expr": { "Literal": { "Value": `'${formatArgs.legend.position}'` } } };
     }
-    objects.legend = [{ "properties": legendProps }];
+    if (!objects.legend) {
+      objects.legend = [{ "properties": {} }];
+    }
+    Object.assign(objects.legend[0].properties, legendProps);
   }
 
   if (formatArgs.axisOverrides) {
@@ -965,7 +1136,10 @@ function applyVisualFormatting(visualObj, formatArgs) {
       if (formatArgs.axisOverrides.xAxisTitleShow !== undefined) {
         xAxisProps.showAxisTitle = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.xAxisTitleShow}` } } };
       }
-      objects.categoryAxis = [{ "properties": xAxisProps }];
+      if (!objects.categoryAxis) {
+        objects.categoryAxis = [{ "properties": {} }];
+      }
+      Object.assign(objects.categoryAxis[0].properties, xAxisProps);
     }
     if (formatArgs.axisOverrides.yAxisShow !== undefined || formatArgs.axisOverrides.yAxisTitleShow !== undefined || formatArgs.axisOverrides.yAxisMin !== undefined || formatArgs.axisOverrides.yAxisMax !== undefined) {
       const yAxisProps = {};
@@ -981,7 +1155,10 @@ function applyVisualFormatting(visualObj, formatArgs) {
       if (formatArgs.axisOverrides.yAxisMax !== undefined) {
         yAxisProps.end = { "expr": { "Literal": { "Value": `${formatArgs.axisOverrides.yAxisMax}` } } };
       }
-      objects.valueAxis = [{ "properties": yAxisProps }];
+      if (!objects.valueAxis) {
+        objects.valueAxis = [{ "properties": {} }];
+      }
+      Object.assign(objects.valueAxis[0].properties, yAxisProps);
     }
   }
 }
@@ -1203,7 +1380,7 @@ const tools = {
     if (!activeReportPath) {
       throw new Error("No active report project connected. Call connect_project first.");
     }
-    const { pageId, visualId, title, dataLabels, axisOverrides, containerStyle, legend } = args;
+    const { pageId, visualId, title, dataLabels, axisOverrides, containerStyle, legend, preset } = args;
     if (!pageId || !visualId) {
       throw new Error("Parameters 'pageId' and 'visualId' are required.");
     }
@@ -1214,7 +1391,7 @@ const tools = {
     }
 
     const visualObj = JSON.parse(fs.readFileSync(visualJsonPath, 'utf8'));
-    applyVisualFormatting(visualObj, { title, dataLabels, axisOverrides, containerStyle, legend });
+    applyVisualFormatting(visualObj, { title, dataLabels, axisOverrides, containerStyle, legend, preset });
     
     fs.writeFileSync(visualJsonPath, JSON.stringify(visualObj, null, 2), 'utf8');
     return { message: `Visual '${visualId}' updated successfully.` };
@@ -2810,7 +2987,7 @@ rl.on('line', async (line) => {
                   },
                    visualType: {
                     type: "string",
-                    enum: ["card", "lineChart", "clusteredColumnChart", "clusteredBarChart", "slicer", "pieChart", "donutChart", "table", "pivotTable", "treemap", "waterfallChart", "scatterChart", "gauge", "kpi", "funnel", "ribbonChart", "decompositionTree", "keyInfluencers", "map", "filledMap", "lineClusteredColumnComboChart", "lineStackedColumnComboChart", "areaChart", "stackedAreaChart", "stackedColumnChart", "stackedBarChart", "hundredPercentStackedColumnChart", "hundredPercentStackedBarChart", "multiRowCard", "basicShape", "image"],
+                    enum: ["card", "lineChart", "clusteredColumnChart", "clusteredBarChart", "slicer", "pieChart", "donutChart", "table", "pivotTable", "treemap", "waterfallChart", "scatterChart", "gauge", "kpi", "funnel", "ribbonChart", "decompositionTree", "keyInfluencers", "map", "filledMap", "lineClusteredColumnComboChart", "lineStackedColumnComboChart", "areaChart", "stackedAreaChart", "stackedColumnChart", "stackedBarChart", "hundredPercentStackedColumnChart", "hundredPercentStackedBarChart", "multiRowCard", "cardVisual", "advancedSlicerVisual", "basicShape", "image"],
                     description: "The visual type chart."
                   },
                   fields: {
@@ -2929,7 +3106,8 @@ rl.on('line', async (line) => {
                       borderShow: { type: "boolean" },
                       borderColor: { type: "string", description: "Hex color code" },
                       backgroundShow: { type: "boolean" },
-                      backgroundTransparency: { type: "number", description: "0 to 100 percentage" }
+                      backgroundTransparency: { type: "number", description: "0 to 100 percentage" },
+                      backgroundColor: { type: "string", description: "Hex color code" }
                     }
                   },
                   legend: {
@@ -2938,6 +3116,11 @@ rl.on('line', async (line) => {
                       show: { type: "boolean" },
                       position: { type: "string", description: "e.g. Top, Bottom, Left, Right" }
                     }
+                  },
+                  preset: {
+                    type: "string",
+                    enum: ["glassmorphism", "darkMinimal", "neonGradient", "orangeBrand", "redCorporate"],
+                    description: "Style formatting preset to apply."
                   }
                 },
                 required: ["pageId", "visualId"]

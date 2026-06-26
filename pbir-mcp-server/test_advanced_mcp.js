@@ -849,6 +849,67 @@ function runMcpSession() {
       assert(!imageJson.visual.query, "image should not have a query block");
       console.log("✓ 'add_visual' (image) success.");
 
+      console.log("Testing 'add_visual' for cardVisual...");
+      const cardVisualResp = await sendRequest('tools/call', {
+        name: 'add_visual',
+        arguments: {
+          pageId,
+          visualType: "cardVisual",
+          fields: {
+            values: ["financials.Sales", "financials.Profit"]
+          }
+        }
+      });
+      assert(!cardVisualResp.result.isError);
+      const cardVisualId = JSON.parse(cardVisualResp.result.content[0].text).visualId;
+      const cardVisualJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', cardVisualId, 'visual.json'), 'utf8'));
+      assert.equal(cardVisualJson.visual.visualType, "cardVisual");
+      assert.equal(cardVisualJson.visual.query.queryState.Data.projections.length, 2);
+      console.log("✓ 'add_visual' (cardVisual) success.");
+
+      console.log("Testing 'add_visual' for advancedSlicerVisual...");
+      const advSlicerResp = await sendRequest('tools/call', {
+        name: 'add_visual',
+        arguments: {
+          pageId,
+          visualType: "advancedSlicerVisual",
+          fields: {
+            field: "financials.Country"
+          },
+          layout: {
+            width: 400,
+            height: 100
+          }
+        }
+      });
+      assert(!advSlicerResp.result.isError);
+      const advSlicerId = JSON.parse(advSlicerResp.result.content[0].text).visualId;
+      const advSlicerJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', advSlicerId, 'visual.json'), 'utf8'));
+      assert.equal(advSlicerJson.visual.visualType, "advancedSlicerVisual");
+      assert(advSlicerJson.visual.query.queryState.Values);
+      assert.equal(advSlicerJson.visual.objects.layout[0].properties.rows.expr.Literal.Value, "1");
+      assert.equal(advSlicerJson.visual.objects.layout[0].properties.columns.expr.Literal.Value, "4");
+      console.log("✓ 'add_visual' (advancedSlicerVisual) success.");
+
+      console.log("Testing 'format_visual' preset (glassmorphism)...");
+      const fmtPresetResp = await sendRequest('tools/call', {
+        name: 'format_visual',
+        arguments: {
+          pageId,
+          visualId: cardVisualId,
+          preset: "glassmorphism",
+          containerStyle: {
+            backgroundTransparency: 50
+          }
+        }
+      });
+      assert(!fmtPresetResp.result.isError);
+      const fmtPresetJson = JSON.parse(fs.readFileSync(path.join(tempReportPath, 'definition', 'pages', pageId, 'visuals', cardVisualId, 'visual.json'), 'utf8'));
+      assert.equal(fmtPresetJson.visual.objects.background[0].properties.transparency.expr.Literal.Value, "50");
+      assert.equal(fmtPresetJson.visual.objects.background[0].properties.color.solid.color.expr.Literal.Value, "'#FFFFFF'");
+      assert.equal(fmtPresetJson.visual.objects.border[0].properties.color.solid.color.expr.Literal.Value, "'#E0E0E0'");
+      console.log("✓ 'format_visual' preset success.");
+
       // 14. Delete Visual
       console.log("Testing 'delete_visual'...");
       const delResp = await sendRequest('tools/call', {
